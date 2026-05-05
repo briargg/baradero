@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intel · Baradero · Sistema de Análisis Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#080b14;--s1:#0e1120;--s2:#141828;--s3:#1c2238;--s4:#242d4a;
+  --acc:#4f7cff;--acc2:#7c5cfc;--acc3:#00d4aa;
+  --grn:#22d07a;--amb:#f59e0b;--red:#ef4444;--pink:#ec4899;--pur:#a855f7;--ora:#f97316;
+  --t1:#eef0f8;--t2:#8b92b8;--t3:#4a5070;--t4:#2a2f4a;
+  --brd:rgba(79,124,255,0.18);--brd2:rgba(255,255,255,0.06);
+  --shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;display:flex}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--s4);border-radius:2px}
+#loginScreen{position:fixed;inset:0;background:var(--bg);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column}
+#loginScreen.hidden{display:none}
+.login-box{background:var(--s1);border:1px solid var(--brd);border-radius:22px;padding:40px 44px;width:360px;box-shadow:0 32px 100px rgba(0,0,0,0.6)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo-main{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.login-logo-sub{font-size:11px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+.login-label{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px;display:block}
+.login-input{width:100%;background:var(--s2);border:1px solid var(--brd2);border-radius:10px;padding:11px 14px;font-size:14px;color:var(--t1);font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s;margin-bottom:16px}
+.login-input:focus{border-color:var(--acc)}
+.login-btn{width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;font-family:'Syne',sans-serif;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:none;cursor:pointer;transition:opacity 0.2s}
+.login-btn:hover{opacity:0.88}
+.login-err{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:8px;color:var(--red);font-size:12px;padding:9px 12px;margin-bottom:14px;display:none}
+.login-err.show{display:block}
+.login-footer{text-align:center;font-size:10px;color:var(--t4);margin-top:18px;letter-spacing:0.5px}
+#appWrapper{display:none;width:100%;height:100%}
+#appWrapper.visible{display:flex}
+#sidebar{width:236px;background:var(--s1);border-right:1px solid var(--brd2);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.logo{padding:20px 18px 16px;border-bottom:1px solid var(--brd2)}
+.logo-main{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-city{font-size:11px;color:var(--t2);font-weight:500;margin-top:2px}
+.logo-sub{font-size:9px;color:var(--t4);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.nav-group{padding:14px 10px 6px}
+.nav-label{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;padding:0 8px 7px}
+.nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:9px 11px;border-radius:10px;border:none;background:none;color:var(--t2);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.15s;text-align:left}
+.nav-btn:hover{background:var(--s2);color:var(--t1)}
+.nav-btn.active{background:linear-gradient(135deg,rgba(79,124,255,0.18),rgba(124,92,252,0.08));color:var(--acc);font-weight:500}
+.nav-btn svg{width:15px;height:15px;flex-shrink:0;opacity:0.7}
+.nav-btn.active svg{opacity:1}
+.nav-badge{margin-left:auto;background:var(--acc);color:#fff;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:600}
+.nav-badge.grn{background:var(--grn)}.nav-badge.amb{background:var(--amb)}.nav-badge.red{background:var(--red)}
+.sidebar-foot{margin-top:auto;padding:12px 14px;border-top:1px solid var(--brd2)}
+.foot-status{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--t2)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--grn);box-shadow:0 0 6px var(--grn);flex-shrink:0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#topbar{background:var(--s1);border-bottom:1px solid var(--brd2);padding:12px 22px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+#pageTitle{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;letter-spacing:-0.3px;flex:1}
+.top-search{background:var(--s2);border:1px solid var(--brd2);border-radius:9px;padding:7px 13px;font-size:13px;color:var(--t1);font-family:'DM Sans',sans-serif;outline:none;width:220px;transition:border-color 0.2s}
+.top-search::placeholder{color:var(--t3)}
+.top-search:focus{border-color:var(--brd)}
+.top-btn{padding:7px 15px;border-radius:9px;font-size:13px;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;font-weight:500;transition:all 0.2s;white-space:nowrap}
+.btn-acc{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff}
+.btn-acc:hover{opacity:0.9}
+.btn-ghost{background:var(--s2);color:var(--t2);border:1px solid var(--brd2)}
+.btn-ghost:hover{color:var(--t1);border-color:var(--brd)}
+.btn-sm{padding:5px 11px;font-size:12px;border-radius:7px}
+#content{flex:1;overflow-y:auto;overflow-x:hidden}
+.screen{display:none;padding:20px 22px;animation:fadeIn 0.2s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+#screen-mapa{display:none;height:100%}
+#screen-mapa.active{display:flex;padding:0}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.scard{background:var(--s1);border:1px solid var(--brd2);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden;transition:transform 0.15s,border-color 0.15s}
+.scard:hover{transform:translateY(-2px);border-color:var(--brd)}
+.scard-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px}
+.scard-val{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;background:linear-gradient(135deg,var(--cA,var(--acc)),var(--cB,var(--acc2)));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.scard-sub{font-size:11px;color:var(--t3);margin-top:6px}
+.scard-ico{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:26px;opacity:0.08}
+.sec{background:var(--s1);border:1px solid var(--brd2);border-radius:16px;overflow:hidden;margin-bottom:14px}
+.sec-head{padding:14px 18px;border-bottom:1px solid var(--brd2);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sec-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;letter-spacing:-0.2px;display:flex;align-items:center;gap:8px}
+.sec-badge{font-size:10px;background:var(--s3);border:1px solid var(--brd2);border-radius:20px;padding:2px 9px;color:var(--t3);font-weight:500;font-family:'DM Sans',sans-serif}
+.sec-body{padding:18px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--t3);font-weight:600;padding:9px 13px;border-bottom:1px solid var(--brd2);text-align:left;background:var(--s2);white-space:nowrap}
+td{padding:9px 13px;font-size:13px;border-bottom:1px solid var(--brd2);color:var(--t2);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,0.015)}
+.badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap;display:inline-block}
+.bg{background:rgba(34,208,122,0.12);color:var(--grn)}
+.ba{background:rgba(245,158,11,0.12);color:var(--amb)}
+.br{background:rgba(239,68,68,0.12);color:var(--red)}
+.bb{background:rgba(79,124,255,0.12);color:var(--acc)}
+.bp{background:rgba(168,85,247,0.12);color:var(--pur)}
+.bpk{background:rgba(236,72,153,0.12);color:var(--pink)}
+.bgr{background:var(--s3);color:var(--t2)}
+.bo{background:rgba(249,115,22,0.12);color:var(--ora)}
+.avatar-ph{width:34px;height:34px;border-radius:50%;background:var(--s3);border:2px solid var(--s4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--t3);flex-shrink:0;font-family:'Syne',sans-serif}
+.user-cell{display:flex;align-items:center;gap:10px}
+.user-name{font-size:13px;font-weight:500;color:var(--t1)}
+.user-handle{font-size:11px;color:var(--acc);margin-top:1px}
+.ig-link{color:var(--pink);text-decoration:none;font-size:11px;padding:3px 8px;background:rgba(236,72,153,0.08);border-radius:5px;border:1px solid rgba(236,72,153,0.18);display:inline-flex;align-items:center;gap:4px;transition:all 0.15s}
+.ig-link:hover{background:rgba(236,72,153,0.16)}
+.bar-r{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.bar-lbl{font-size:12px;color:var(--t2);width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;background:var(--s3);border-radius:4px;height:20px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:600;color:#fff;white-space:nowrap;transition:width 0.6s ease}
+.bar-n{font-size:11px;color:var(--t3);width:30px;text-align:right;flex-shrink:0}
+#mapDiv{flex:1;z-index:1}
+.map-sidebar{width:320px;background:var(--s1);border-left:1px solid var(--brd2);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.map-top{padding:14px 16px;border-bottom:1px solid var(--brd2)}
+.map-filters{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+.filter-chip{padding:4px 11px;border-radius:20px;font-size:11px;cursor:pointer;border:1px solid var(--brd2);color:var(--t3);background:transparent;font-family:'DM Sans',sans-serif;transition:all 0.15s}
+.filter-chip.on{background:rgba(79,124,255,0.15);border-color:rgba(79,124,255,0.35);color:var(--acc)}
+.filter-chip:hover{border-color:var(--brd)}
+.map-list{flex:1;overflow-y:auto;padding:8px}
+.map-item{padding:10px 12px;border-radius:10px;margin-bottom:4px;cursor:pointer;border:1px solid transparent;transition:all 0.15s}
+.map-item:hover{background:var(--s2);border-color:var(--brd2)}
+.map-item-name{font-size:13px;font-weight:500;color:var(--t1)}
+.map-item-addr{font-size:11px;color:var(--t3);margin-top:2px}
+select{background:var(--s2);border:1px solid var(--brd2);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--t1);font-family:'DM Sans',sans-serif;outline:none;cursor:pointer}
+select:focus{border-color:var(--brd)}
+.informe-section{background:var(--s2);border:1px solid var(--brd2);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.informe-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.informe-body{font-size:13px;color:var(--t2);line-height:1.7}
+.informe-body strong{color:var(--t1)}
+.chip-g{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.chip-F{background:rgba(236,72,153,0.15);color:var(--pink)}
+.chip-M{background:rgba(79,124,255,0.15);color:var(--acc)}
+.chip-U{background:var(--s3);color:var(--t3)}
+.pag-btn{padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid var(--brd2);background:var(--s2);color:var(--t2);font-family:'DM Sans',sans-serif}
+.pag-btn:hover{border-color:var(--brd);color:var(--t1)}
+.pag-btn.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-main">INTEL · BARADERO</div>
+      <div class="login-logo-sub">Sistema de Análisis Digital</div>
+    </div>
+    <div id="loginErr" class="login-err">Usuario o contraseña incorrectos.</div>
+    <label class="login-label">Usuario</label>
+    <input id="loginUser" class="login-input" type="text" placeholder="Ingrese su usuario" autocomplete="username">
+    <label class="login-label">Contraseña</label>
+    <input id="loginPass" class="login-input" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">Ingresar al Sistema</button>
+    <div class="login-footer">Acceso restringido — Solo personal autorizado</div>
+  </div>
+</div>
+
+<div id="appWrapper">
+<div id="sidebar">
+  <div class="logo">
+    <div class="logo-main">INTEL · BRD</div>
+    <div class="logo-city">Baradero — Análisis Digital</div>
+    <div class="logo-sub">Sistema de Inteligencia</div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-label">Módulos</div>
+    <button class="nav-btn active" onclick="showScreen('overview',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Overview
+    </button>
+    <button class="nav-btn" onclick="showScreen('usuarios',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Base de Seguidores
+      <span class="nav-badge">721</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('mapa',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      Mapa Territorial
+      <span class="nav-badge grn">276</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('demografía',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Demografía
+      <span class="nav-badge amb">IA</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('informe',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Informe Estratégico
+      <span class="nav-badge amb">IA</span>
+    </button>
+  </div>
+  <div class="sidebar-foot">
+    <div class="foot-status"><div class="status-dot"></div>Sistema activo · May 2026</div>
+    <div style="font-size:10px;color:var(--t4);margin-top:6px">Baradero, Buenos Aires · 721 registros</div>
+  </div>
+</div>
+
+<div id="main">
+  <div id="topbar">
+    <div id="pageTitle">Overview — Dashboard General</div>
+    <input class="top-search" id="globalSearch" placeholder="Buscar usuario o nombre…" oninput="globalFilter(this.value)">
+    <button class="top-btn btn-ghost btn-sm" onclick="exportCSV()">Exportar CSV</button>
+    <button class="top-btn btn-acc btn-sm" onclick="showScreen('informe',document.querySelector('.nav-btn:nth-child(5)'))">Ver Informe IA</button>
+  </div>
+  <div id="content">
+
+    <!-- OVERVIEW -->
+    <div id="screen-overview" class="screen active">
+      <div class="stats-row">
+        <div class="scard" style="--cA:#4f7cff;--cB:#7c5cfc">
+          <div class="scard-lbl">Total registros</div>
+          <div class="scard-val">721</div>
+          <div class="scard-sub">Seguidores analizados</div>
+          <div class="scard-ico">👥</div>
+        </div>
+        <div class="scard" style="--cA:#22d07a;--cB:#00d4aa">
+          <div class="scard-lbl">Personas identificadas</div>
+          <div class="scard-val">449</div>
+          <div class="scard-sub">62.3% con datos personales</div>
+          <div class="scard-ico">📋</div>
+        </div>
+        <div class="scard" style="--cA:#f59e0b;--cB:#f97316">
+          <div class="scard-lbl">Cuentas comerciales</div>
+          <div class="scard-val">272</div>
+          <div class="scard-sub">Negocios y emprendimientos</div>
+          <div class="scard-ico">🏪</div>
+        </div>
+        <div class="scard" style="--cA:#ec4899;--cB:#a855f7">
+          <div class="scard-lbl">Geolocalizados</div>
+          <div class="scard-val">276</div>
+          <div class="scard-sub">38.3% con domicilio mapeado</div>
+          <div class="scard-ico">📍</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="sec">
+          <div class="sec-head"><div class="sec-title">Distribución por género</div></div>
+          <div class="sec-body" id="genBar"></div>
+        </div>
+        <div class="sec">
+          <div class="sec-head"><div class="sec-title">Apellidos más frecuentes</div></div>
+          <div class="sec-body" id="apellidosBar"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="sec">
+          <div class="sec-head"><div class="sec-title">Ocupaciones principales</div><span class="sec-badge">Top 8</span></div>
+          <div class="sec-body" id="profBar"></div>
+        </div>
+        <div class="sec">
+          <div class="sec-head"><div class="sec-title">Distribución etaria</div></div>
+          <div class="sec-body" id="ageOverview"></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-head"><div class="sec-title">Proyección estratégica 2026</div></div>
+        <div class="sec-body">
+          <div style="display:flex;gap:20px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+            <div style="text-align:center"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--acc)">Abr</div><div style="font-size:11px;color:var(--t3)">Base: 721</div></div>
+            <div style="color:var(--t4);font-size:20px">→</div>
+            <div style="text-align:center"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--grn)">Jun est.</div><div style="font-size:11px;color:var(--t3)">~900</div></div>
+            <div style="color:var(--t4);font-size:20px">→</div>
+            <div style="text-align:center"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--amb)">Sep est.</div><div style="font-size:11px;color:var(--t3)">~1.400</div></div>
+            <div style="color:var(--t4);font-size:20px">→</div>
+            <div style="text-align:center"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--red)">Dic est.</div><div style="font-size:11px;color:var(--t3)">~2.500</div></div>
+          </div>
+          <div style="font-size:12px;color:var(--t3);line-height:1.6">Proyección basada en perfil demográfico activo (26-45 años, emprendedores, docentes). El núcleo de mujeres 26-45 años es el motor principal de crecimiento orgánico. Estrategia de contenido orientada a economía local y familia potencia el alcance.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- USUARIOS -->
+    <div id="screen-usuarios" class="screen">
+      <div class="sec">
+        <div class="sec-head">
+          <div class="sec-title">Base de Seguidores <span class="sec-badge" id="userCount">721 registros</span></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="filterGender" onchange="renderTable()">
+              <option value="">Todos los géneros</option>
+              <option value="F">Mujeres</option>
+              <option value="M">Hombres</option>
+              <option value="U">Indefinido</option>
+            </select>
+            <select id="filterAge" onchange="renderTable()">
+              <option value="">Todas las edades</option>
+              <option value="18-25">18-25 años</option>
+              <option value="26-35">26-35 años</option>
+              <option value="36-45">36-45 años</option>
+              <option value="46-60">46-60 años</option>
+              <option value="60+">60+ años</option>
+            </select>
+            <select id="filterBiz" onchange="renderTable()">
+              <option value="">Todos</option>
+              <option value="0">Solo personas</option>
+              <option value="1">Solo negocios</option>
+            </select>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>#</th><th>Usuario</th><th>Género</th><th>Edad est.</th><th>Ocupación</th><th>Domicilio</th><th>Instagram</th>
+            </tr></thead>
+            <tbody id="userTableBody"></tbody>
+          </table>
+        </div>
+        <div style="padding:14px 18px;display:flex;gap:6px;flex-wrap:wrap;align-items:center" id="tablePag"></div>
+      </div>
+    </div>
+
+    <!-- MAPA -->
+    <div id="screen-mapa" style="display:none;height:100%">
+      <div id="mapDiv"></div>
+      <div class="map-sidebar">
+        <div class="map-top">
+          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700">Baradero — Distribución Geográfica</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:3px">276 usuarios geolocalizados</div>
+          <div class="map-filters">
+            <div class="filter-chip on" onclick="toggleMapFilter(this,'todas')">Todas</div>
+            <div class="filter-chip" onclick="toggleMapFilter(this,'F')" style="border-color:rgba(236,72,153,0.3);color:var(--pink)">Mujeres</div>
+            <div class="filter-chip" onclick="toggleMapFilter(this,'M')" style="border-color:rgba(79,124,255,0.3);color:var(--acc)">Hombres</div>
+            <div class="filter-chip" onclick="toggleMapFilter(this,'estudiante')">Estudiantes</div>
+            <div class="filter-chip" onclick="toggleMapFilter(this,'comercio')">Comercios</div>
+          </div>
+        </div>
+        <div class="map-list" id="mapList"></div>
+      </div>
+    </div>
+
+    <!-- DEMOGRAFÍA -->
+    <div id="screen-demografía" class="screen">
+      <div class="stats-row">
+        <div class="scard" style="--cA:#ec4899;--cB:#a855f7">
+          <div class="scard-lbl">Mujeres</div>
+          <div class="scard-val">35%</div>
+          <div class="scard-sub">159 identificadas</div>
+        </div>
+        <div class="scard" style="--cA:#4f7cff;--cB:#00d4aa">
+          <div class="scard-lbl">Hombres</div>
+          <div class="scard-val">27%</div>
+          <div class="scard-sub">120 identificados</div>
+        </div>
+        <div class="scard" style="--cA:#22d07a;--cB:#00d4aa">
+          <div class="scard-lbl">Núcleo 26-35</div>
+          <div class="scard-val">217</div>
+          <div class="scard-sub">Mayor grupo con DNI</div>
+        </div>
+        <div class="scard" style="--cA:#f59e0b;--cB:#f97316">
+          <div class="scard-lbl">Estudiantes</div>
+          <div class="scard-val">207</div>
+          <div class="scard-sub">45% del total con ocupación</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="sec">
+          <div class="sec-head"><div class="sec-title">Género por rango etario</div></div>
+          <div class="sec-body" id="genAgeBar"></div>
+        </div>
+        <div class="sec">
+          <div class="sec-head"><div class="sec-title">Rangos etarios — estimación por DNI</div></div>
+          <div class="sec-body" id="ageBar"></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-head"><div class="sec-title">Observaciones clave del perfil de Baradero</div></div>
+        <div class="sec-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="informe-section">
+              <div class="informe-title" style="color:var(--grn)">👥 Apellidos frecuentes</div>
+              <div class="informe-body">Alta repetición de apellidos como <strong>Malacalza, Romero, Ríos, Martínez, González, Manicler, Gauna, Giménez</strong> confirman una comunidad unida de ciudad chica donde el boca a boca es clave.</div>
+            </div>
+            <div class="informe-section">
+              <div class="informe-title" style="color:var(--acc)">🏪 Economía local</div>
+              <div class="informe-body">Gran cantidad de emprendimientos: <strong>Volquetes Javi, Forrajería La Odisea, Refrigeración REI, Pinturería Bolaños, Tapicería Ramírez</strong>. Base de seguidores muy vinculada al comercio local.</div>
+            </div>
+            <div class="informe-section">
+              <div class="informe-title" style="color:var(--amb)">🏫 Instituciones</div>
+              <div class="informe-body">Cuentas de entidades oficiales: <strong>Ballet Municipal, Bomberos Voluntarios, Hospital Municipal, ATE Baradero</strong>. Sugiere una red de comunicación política y vecinal activa.</div>
+            </div>
+            <div class="informe-section">
+              <div class="informe-title" style="color:var(--pink)">👩 Público principal</div>
+              <div class="informe-body">Mujeres de <strong>26-40 años</strong> son el núcleo más activo. Emprendedoras, amas de casa activas digitalmente y empleadas. Toman decisiones de consumo y movilizan el entorno familiar.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INFORME -->
+    <div id="screen-informe" class="screen">
+      <div class="stats-row">
+        <div class="scard" style="--cA:#22d07a;--cB:#00d4aa">
+          <div class="scard-lbl">Público objetivo</div>
+          <div class="scard-val">Mujeres</div>
+          <div class="scard-sub">26-45 años — núcleo principal</div>
+        </div>
+        <div class="scard" style="--cA:#4f7cff;--cB:#7c5cfc">
+          <div class="scard-lbl">Segmento estratégico</div>
+          <div class="scard-val">Empr.</div>
+          <div class="scard-sub">Emprendedores y comerciantes</div>
+        </div>
+        <div class="scard" style="--cA:#f59e0b;--cB:#f97316">
+          <div class="scard-lbl">Cobertura territorial</div>
+          <div class="scard-val">38%</div>
+          <div class="scard-sub">276 domicilios mapeados</div>
+        </div>
+        <div class="scard" style="--cA:#ec4899;--cB:#a855f7">
+          <div class="scard-lbl">Potencial de alcance</div>
+          <div class="scard-val">~2.5k</div>
+          <div class="scard-sub">Proyección dic 2026</div>
+        </div>
+      </div>
+
+      <div class="informe-section" style="background:rgba(79,124,255,0.06);border:1px solid rgba(79,124,255,0.18);border-radius:14px;padding:20px;margin-bottom:12px">
+        <div class="informe-title" style="color:var(--acc);font-size:15px">📊 Resumen Ejecutivo — Inteligencia Baradero</div>
+        <div class="informe-body">El análisis de los <strong>721 seguidores</strong> de la cuenta revela una comunidad digitalmente activa con características típicas de ciudad chica bonaerense. La base está compuesta por un <strong>62.3% de personas individuales</strong> y un <strong>37.7% de cuentas comerciales o institucionales</strong>, lo que indica penetración en la economía local. El núcleo demográfico más valioso es el de <strong>mujeres de 26 a 45 años</strong>, que concentran la mayor tasa de engagement y movilización social.</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="informe-section">
+          <div class="informe-title" style="color:var(--pink)">👩 Estrategia para mujeres 26-45 años</div>
+          <div class="informe-body">Son el núcleo más duro. Crear contenido sobre <strong>economía familiar, emprendimiento local, salud y educación</strong>. Son quienes toman decisiones de consumo y movilizan el voto familiar. Tono: cercano, práctico y comunitario.</div>
+        </div>
+        <div class="informe-section">
+          <div class="informe-title" style="color:var(--acc)">👨 Estrategia para hombres 25-45 años</div>
+          <div class="informe-body">Segundo grupo más importante. Hablar de <strong>trabajo, infraestructura, deportes</strong> (fútbol local, pesca) y herramientas para oficios. Muchos son propietarios de comercios locales o trabajadores independientes.</div>
+        </div>
+        <div class="informe-section">
+          <div class="informe-title" style="color:var(--amb)">🎓 Segmento joven (18-25 años) — 207 estudiantes</div>
+          <div class="informe-body">El 45% de los usuarios con ocupación declarada son <strong>estudiantes</strong>. Requieren contenido dinámico, visual y en formatos cortos (Reels). Temas: futuro laboral, educación, recreación local.</div>
+        </div>
+        <div class="informe-section">
+          <div class="informe-title" style="color:var(--grn)">🏪 Emprendedores y comerciantes</div>
+          <div class="informe-body">Porcentaje muy activo y visible. Aliados estratégicos naturales. Contenido sobre <strong>apoyo al comercio local, herramientas digitales para negocios, financiamiento</strong>. Son líderes de opinión en su entorno.</div>
+        </div>
+      </div>
+
+      <div class="informe-section" style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.18);border-radius:14px;padding:20px">
+        <div class="informe-title" style="color:var(--red);font-size:14px">⚠️ Alertas estratégicas</div>
+        <div class="informe-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+          <div>• <strong>38.3%</strong> sin domicilio registrado — ampliar relevamiento territorial</div>
+          <div>• Alta concentración en <strong>COLOMBRES 733</strong> (51 usuarios de institución educativa)</div>
+          <div>• <strong>37.7%</strong> son cuentas comerciales — segmentar comunicación B2B/B2C</div>
+          <div>• Apellidos repetidos confirman <strong>redes familiares</strong> — aprovechar efecto boca a boca</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+const DATA = [["mauri.cio1088","MAURICIO RIOS","GODOY CRUZ 2105 S/N","ESTUDIANTE","M","36-45",0,-33.695876,-59.50818],["berni_otero13","BERNARDO OTERO","DOLLERA 3217","ESTUDIANTE","M","36-45",0,-33.692943,-59.515675],["luciianorios","LUCIANO RIOS","MAIPU 975","ESTUDIANTE","M","36-45",0,-33.693153,-59.510556],["santiv.2025","SANTIAGO VILLAVERDE","BOEDO 1005","ESTUDIANTE","M","26-35",0,-33.690283,-59.506857],["lucasricardomorales","LUCAS RICARDO MORALES","LIBERTAD 2598","","M","18-25",0,-33.700417,-59.512967],["bauti28120","BAUTISTA HERNANDO","SAAVEDRA 2102 0","","M","18-25",0,0,0],["darolacuadra","DARÍO LACUADRA","GAZCON 1652","PLOMERO","U","46-60",0,0,0],["miguel929163","MIGUEL BARBICH","SAN MARTIN 1146 S/N","MEDICO","M","60+",0,-33.692721,-59.505286],["egle.zabala.923","EGLE ZABALA","","","F","18-25",0,0,0],["ian.buscaglia","IAN BUSCAGLIA","PIГ‘EIRO LINO 327 0 0","","M","18-25",0,0,0],["volquetes.javi","JAVI BRAILLARD","ASTIGUETA JOSE 75 0 0","EMPLEADO","M","46-60",0,-33.697261,-59.506406],["guille_portu","GUILLERMO PORTU","ROLDAN BELISARIO 759","","M","18-25",0,0,0],["daychu51","DAYANA CHUDYK","","","F","18-25",0,0,0],["angeli_gzl","YANINA GOMEZ","LUIS PASTEUR 667","ESTUDIANTE","F","26-35",0,-33.694297,-59.507654],["arielsamec","ARIEL SAMEC","BELGRANO MANUEL 2726","COMERCIANTE","M","46-60",0,-33.694997,-59.513486],["juma.sm","JUAN MANUEL DE LOS SANTOS","AYACUCHO 866","ESTUDIANTE","M","26-35",0,-33.69483,-59.510435],["joaqui.leon","JOAQUÍN GABRIEL LEÓN","4 DE FEBRERO 230 0","ESTUDIANTE","U","26-35",0,-33.690864,-59.513924],["huguero90","HUGO MARTINEZ","RENE SIMON 1417","UNIVERSITARIO","M","36-45",0,-33.694384,-59.503275],["kristal.franch","KRISTAL FRANCH","SERRANO 138","","F","18-25",0,-33.694968,-59.502929],["gustavo36461","GUSTAVO VARGAS","LUIS PASTEUR 667","ESTUDIANTE","M","26-35",0,-33.693194,-59.514298],["germanost.go","GERMAN OSTOICH","JUNIN 810","ESTUDIANTE","M","26-35",0,-33.695845,-59.508952],["axel__yaques","AXEL YAQUES","THAMES 160","ESTUDIANTE","M","26-35",0,-33.697007,-59.503722],["criskrum","CRISTIAN KRUM","FRAY L DE BOLAГ‘OS 2012","ESTUDIANTE","M","26-35",0,0,0],["pablosandoval156","PABLO SANDOVAL","URIARTE 618","AMA DE CASA","M","36-45",0,-33.697007,-59.510391],["emiliohatun","EMILIO HATUN","AYACUCHO 1426","ESTUDIANTE","M","26-35",0,-33.69745,-59.504841],["micapereyra503","MICAELA PEREYRA","LIBERTAD 2330","SIN OCUPACION","F","26-35",0,-33.697239,-59.512383],["rominamedina","ROMINA MEDINA","LIBERTAD 2118","EMPLEADO","F","36-45",0,-33.696207,-59.509238],["valenperez372","VALENTINA PEREZ","MAIPU 3149","","F","18-25",0,-33.692226,-59.505961],["juanmasavoy","JUAN MANUEL SAVOY","I. CARLOS CHABROL 1067","DESOCUPADO","M","36-45",0,0,0],["luzamelino","LUZ AMELINO","DEL CORRO 1380 0","AMA DE CASA","F","60+",0,-33.701419,-59.504596],["germanruiz2020","GERMAN RUIZ","RENE SIMON 1140","","M","18-25",0,-33.700669,-59.499925],["marianamartinez2933","MARIANA MARTINEZ","BELGRANO MANUEL 2578","AMA DE CASA","F","60+",0,-33.693653,-59.515107],["tadeo_nores","TADEO NORES","MARTIN DE GAINZA 3355 0","","U","26-35",0,-33.697404,-59.50864],["milagroslopez9806","MILAGROS LOPEZ","BВ°RAUL BORRAS-MZ.58F-C.18 S/N","AMA DE CASA","F","26-35",0,0,0],["marinalva80487","MARINALVA BARBOSA","BULNES 875 S/N","AMA DE CASA","F","60+",0,-33.69992,-59.510668],["nano_arrieta23","NANO ARRIETA","LIBERTAD 825","SIN OCUPACION","U","36-45",0,-33.694841,-59.506681],["jualbergonzalez_","JUALBER GONZALEZ","PUEYRREDON 985","ESTUDIANTE","U","26-35",0,-33.697678,-59.507115],["valeria.salaberry","MARÍA VALERIA SALABERRY","CABRERA 1023 S/N","EMPLEADO","F","36-45",0,-33.695424,-59.510006],["flortedesco","FLORENCIA TEDESCO","PASSO 846","ESTUDIANTE","F","26-35",0,-33.698868,-59.503675],["lucrecia.mansilla.796","LUCReCIA MANSILLA","LIAUDAT CASIMIRO 45","ESTUDIANTE","F","36-45",0,0,0],["aldo.saia","ALDO SAIA","RODRIGUEZ 852","EMPLEADO","M","60+",0,-33.691154,-59.509128],["marcela.cataldo.75","MARCELA CATALDO","MAZA 290","AMA DE CASA","F","46-60",0,-33.698479,-59.51025],["gasti79653","AGUANTE BOCA","","","U","unknown",0,0,0],["danielbralo622","DANIEL BRALO","CABRERA 1065","EMPRESARIO","M","46-60",0,-33.692136,-59.507143],["triivega8","TRII VEGA","SARMIENTO 290","DOCENTE","U","36-45",0,-33.696021,-59.509483],["lauraantonelabareiro","LAURA ANTONELA BAREIRO","","","F","26-35",0,0,0],["ferti.riego.sistem","FERTIRIEGO'S","","","U","unknown",1,0,0],["david_heredia07","DAVID HEREDIA","MITRE 842","ESTUDIANTE","M","26-35",0,-33.691309,-59.509459],["daiana.val_","DAIANA VAL","M. DE GAINZA 1638","","F","26-35",0,-33.700664,-59.506374],["ceci_petrazzueloo","CECI PETRAZZUELO","LAVALLE 199","SIN OCUPACION","F","26-35",0,-33.697305,-59.506978],["matiasacosta81","MATÍAS ACOSTA","","","U","36-45",0,0,0],["miguelbarbich","MIGUEL BARBICH","SAN MARTIN 1146 S/N","MEDICO","M","60+",0,-33.69269,-59.507863],["aiesilviagarea","SILVIA ALEJANDRA GAREA","A CARRANZA 825","ESTUDIANTE","F","46-60",0,-33.69652,-59.502554],["stefa_caste","STEFA⚡","","","U","unknown",0,0,0],["kultrum_producciones","K U L T R U M","","","U","unknown",1,0,0],["ruben.fidalgo.58","RUBEN FIDALGO","A CARRANZA 335","EMPLEADO","M","46-60",0,-33.697332,-59.507516],["roberto.pardo.712823","ROBERTO PARDO","BULNES 660 S/N","COMERCIANTE","M","46-60",0,-33.700066,-59.504559],["alai6076","ISABELLA ALAI","SAN MARTIN 1146 BARADERO","ESTUDIANTE","F","60+",0,-33.698239,-59.506977],["martaalbiger","MARTA ALBIGER","MALABIA 818 S/N","COMERCIANTE","F","46-60",0,-33.69562,-59.509414],["virginiatallafer","VIRGINIA TALLAFER","SAN LORENZO 239","EMPLEADO","F","36-45",0,-33.69981,-59.507127],["maxiserrlunga","MAXI SERRALUNGA","","","M","26-35",0,0,0],["pilar78279","PILAR RODRIGUEZ","","","F","18-25",0,0,0],["lauedugiulianogonzalez","LAU EDU GIULIANO GONZALEZ","GUEVARA CHE 20","NO CONSTA","U","36-45",0,0,0],["__tahiel","🙉🙊🙈💯💥","","","U","unknown",1,0,0],["romero17gian","𝔾𝕚𝕒𝕟.𝕣𝕠𝕞𝕖𝕣𝕠","BOEDO Y MEDRANO S/N","ESTUDIANTE","U","26-35",0,-33.692663,-59.506408],["alex_pineyro","ALEX PIÑEYRO","CABRERA 912","SIN OCUPACION","U","36-45",0,-33.691594,-59.509416],["sergio_figueroa0","SERGIO FIGUEROA","CARRANZA 970","EMPLEADO","M","46-60",0,-33.6921,-59.509141],["nanotouzet","ENZO TOUZET","C.BARROS 1456","ESTUDIANTE","M","26-35",0,0,0],["pauurivadeneyra","PAUU RIVADENEYRA","","","U","26-35",0,0,0],["gab.riela2718","GABY FERNANDEZ","JUSTO JUAN B. 519 0 0","EMPLEADO","F","36-45",0,0,0],["santitessaro","SANTIAGO RODOLFO TESSARO","","","M","18-25",0,0,0],["daltoa","ALDO DALTO","SANTA M.DE ORO 109 S/N","AMA DE CASA","M","60+",0,0,0],["eve_body19","EVE BODDY","","","U","18-25",0,0,0],["cuchu_krampitz_","CUCHU KRAMPITZ","GORRITI 789","OPERARIO","U","46-60",0,-33.697888,-59.510657],["andres.gamba.14203","ANDRÉS GAMBA","O. WUTRICH 99 0","AMA DE CASA","U","36-45",0,0,0],["pablocasassarmientonoticias","PABLO CASAS SARMIENTO NOTICIAS","","","M","unknown",1,0,0],["trabun3","T̵r̵a̵b̵u̵n̵ i̵n̵d̵u̵m̵e̵n̵t̵a̵r̵i̵a̵","","","U","unknown",1,0,0],["valentinoorock","VALEN REINICK","ASTIGUETA 86","EMPLEADO","U","26-35",0,-33.6978,-59.508147],["rominamalacalza22","ROMY MALACALZA","SANCHEZ LORIA 1823","ESTUDIANTE","U","26-35",0,-33.698615,-59.503794],["primer_dan","DANIEL TORRES","J O'ROARKE 1851 S/N","MODISTO","M","60+",0,0,0],["danielaramirez.m","ᗪᗩᑎIEᒪᗩ ᖇᗩᗰIᖇEᘔ","EYLE PETRONA 480 0 0","JORNALERO","U","26-35",0,0,0],["marta.braillard","MARTA BRAILLARD","SAN MARTIN 1757","EMPLEADO","F","46-60",0,-33.698785,-59.508973],["nachorozas._","IGNACIO ROZAS","ACEVEDO 549 S/N","COMERCIANTE","M","36-45",0,-33.698512,-59.503982],["_nachitto.zmd","𝒩𝒶𝒸𝒽𝒾𝓉𝓉ℴ","","","U","unknown",0,0,0],["forrajerialaodisea","FORRAJERIA LA ODISEA","","","F","unknown",1,0,0],["mariaelenaesconjaureguy","MARIA ELENA ESCONJAUREGUY","E GENOUD 669 S/N","AMA DE CASA","F","60+",0,-33.69194,-59.507564],["eletroteck_info","EDUARDO CORDEIRO","","","M","unknown",0,0,0],["leones_de_baradero","PABLO SANCHEZ","SANCHEZ BUSTAMANTE 1828","ESTUDIANTE","M","26-35",0,-33.697567,-59.506643],["ian745589","IAN","FRAY L DE BOLAГ‘OS 2012","ESTUDIANTE","M","26-35",0,0,0],["jbautista.morales","JUAN BAUTISTA MORALES","AMEGHINO FLORENTINO 346","ESTUDIANTE","M","46-60",0,-33.696626,-59.512808],["eurlypereyra","€lY PEREYRA","CHALA 849","ESTUDIANTE","U","26-35",0,-33.69425,-59.516294],["giselafranzanti","GISELA FRANZANTI","DEL CORRO 2475","SIN OCUPACION","F","26-35",0,-33.700211,-59.500888],["umbraltecno","UMBRAL TECNO","","","U","unknown",1,0,0],["agustin.pistone","AGUSTÍN PISTONE","4 DE FEBRERO 647","ESTUDIANTE","U","36-45",0,-33.696149,-59.5066],["marcelocartonero","MARCELO LOTO","","","M","46-60",0,0,0],["jjuurojass","𝑗𝑢𝑙𝑖𝑟𝑜𝑗𝑎𝑠","","","U","36-45",0,0,0],["fuentes.charlye","CHARLYE FUENTES","THAMES 1485","ESTUDIANTE","U","26-35",0,-33.700086,-59.509212],["lopezkeviin_","KEVIN LÓPEZ","GODOY CRUZ S/N","AMA DE CASA","U","26-35",0,-33.695451,-59.504344],["mauricioreichel_","MAURICIO REICHEL","BOEDO 1157 S/N","ESTUDIANTE","M","36-45",0,-33.693816,-59.504664],["vane_pprieto","VANE 🦋💜","","","U","unknown",0,0,0],["laahcaroohvargas5173","LAAH CAROOH VARGAS","","","U","unknown",0,0,0],["veelu.sossa","𝕭𝖊𝖑𝖊𝖊𝖓","AV. R.SIMON 1347","ESTUDIANTE","U","26-35",0,-33.696001,-59.506275],["lu.dieser","LUCAS DIESER AIMAR","ANCHORENA 1489","ABOGADO","M","36-45",0,0,0],["pedrosalomon.332","PEDRO SALOMÓN","MITRE 2305","AMA DE CASA","M","46-60",0,-33.692526,-59.507021],["riospaulo72","PAULO RÍOS","","","U","46-60",0,0,0],["noradabove","NORA DABOVE","DORREGO 124","DOCENTE","F","60+",0,0,0],["mosbar9001","MARIANO SANTOS","","","U","46-60",0,0,0],["pelchabeyer","PELCHA BEYER","F ROSSELL 655 S/N","ESTUDIANTE","F","46-60",0,0,0],["cecrein_","CECREIN_","MARTIN DE GAINZA 2069","ESTUDIANTE","U","26-35",0,-33.697397,-59.510947],["natalibedini","NATALÍ BEDINI","MEDRANO 341 S/N","EMPLEADO","U","46-60",0,0,0],["euge.saba","EUGE SABATINO","GORRITI 971","NO CONSTA","U","26-35",0,-33.70061,-59.50692],["aricollii","ARI","ARAOZ 1078","ODONTOLOGO","U","26-35",0,-33.696554,-59.510777],["migueldinopulos","MIGUEL DINOPULOS","CABRERA 1463","DOCENTE","M","46-60",0,-33.692926,-59.507019],["agus.contrera19","𝔐𝔞𝔠𝔞𝔯𝔢𝔫𝔞 ℭ𝔬𝔫𝔱𝔯𝔢𝔯𝔞","BOEDO 1028 0","ESTUDIANTE","U","26-35",0,-33.696703,-59.51191],["lu_rodriguezrastellini","NATALIA LUCIANA RODRIGUEZ RASTELLINI","ROARKE 1725","ESTUDIANTE","F","26-35",0,0,0],["cari_hb3","CARI","","","U","unknown",0,0,0],["walterguevsra","WALTER GUEVSRA","C.SAAVEDRA NВ° 2781","ESTUDIANTE","M","26-35",0,0,0],["acuna2720","MARIA ACUÑA","SAN MARTIN 180","ESTUDIANTE","F","46-60",0,-33.694056,-59.510928],["delfinamarcela99","MARCELA OLIVERA","ROSELL FERMIN 1","EMPLEADO","F","46-60",0,0,0],["martineduardot","MARTIN EDUARDO TORRES","JAUREGUI JOSEFA 688","DOCENTE","M","36-45",0,0,0],["mirthaleticiazamuner","MIRTHA LETICIA ZAMUNER","","","F","36-45",0,0,0],["daianalisola","DAI ♡","LINO PIГ‘EIRO 264","AMA DE CASA","U","26-35",0,0,0],["vanesabustos79","VANESA BUSTOS","4 DE FEBRERO 298","ESTUDIANTE","F","26-35",0,-33.695323,-59.50907],["fedraaccorso.87","FEDRA ACCORSO","JUJUY 75 0","ESTUDIANTE","F","36-45",0,0,0],["miia.gui01","𝑀𝒾𝒶♡","BARRIO TOBARES CASA 23 S/N","AMA DE CASA","U","26-35",0,0,0],["roblesian125","GM COSAS DULCES 🎂","","","U","unknown",1,0,0],["braianandresgonzalez","BRAIAN","O'ROARKE JULIГЃN 3165","ESTUDIANTE","M","26-35",0,0,0],["roc.i2026","RO💕","","","U","unknown",0,0,0],["elidamauri","ELIDA MAURI","KENNEDY 94","ESTUDIANTE","F","26-35",0,0,0],["osmar_hldalgo21","OSMAR HLDALGO","","","U","46-60",0,0,0],["gabitaromero__","GABRIELA ROMERO","SALGUERO 2750","ESTUDIANTE","F","36-45",0,0,0],["ramonajucol","RAMONA LAPLAZETA","ANASTASI LEONIDAS 549","AMA DE CASA","F","60+",0,0,0],["tapiceriamarirezo","𝙏𝙖𝙥𝙞𝙘𝙚𝙧𝙞𝙖 𝙍𝙖𝙢𝙞𝙧𝙚𝙯","","","U","unknown",1,0,0],["tony_pereyra_","(TONY)","DARRAGUEIRA 546","AMA DE CASA","U","46-60",0,0,0],["instalaciones_ro_lo","INSTALACIONES RO-LO","","","U","unknown",1,0,0],["jesusmicucci","JESUS MICUCCI","DEL CORRO 831 S/N","EMPLEADO","U","46-60",0,-33.698243,-59.500575],["darabril","DARA ABRIL","O'ROARKE JULIГЃN 3389","AMA DE CASA","F","36-45",0,0,0],["gracielaberdon","GRACIELA BERDON","ACEVEDO N 422 S/N","AMA DE CASA","F","60+",0,-33.69948,-59.507264],["proyectosolidio3d","PROYECTO SÓLIDO 3D","","","U","unknown",1,0,0],["pugliesijona","JONA PUGLIESI","SIMON RENE 611 0","","F","26-35",0,-33.695005,-59.508824],["matiasllopez2026","MATIAS LOPEZ","A BARBICH 1529","ESTUDIANTE","M","26-35",0,0,0],["noelia.qrga","NOELIA","F. AMEGHINO 160","ESTUDIANTE","F","26-35",0,-33.691917,-59.51262],["natatejerina","NATA","O'ROARKE JULIГЃN 3107","ESTUDIANTE","F","26-35",0,0,0],["leilaaylen1","AYLEN VELAZQUEZ","GALLO 1476","ESTUDIANTE","U","26-35",0,-33.700058,-59.504668],["pollerialaestacion_22","POLLERIA LA ESTACION","","","F","unknown",1,0,0],["maria.bello.370","MARÍA BELLO","MALABIA 1190","ESTUDIANTE","F","46-60",0,-33.69535,-59.506659],["johannaamend20","JOHANNA AMEND","DORREGO 375 0","ESTUDIANTE","F","36-45",0,0,0],["laurabeatrizcaresano","LAURA BEATRIZ CARESANO","DEL TRABAJO 570 0 0","","F","18-25",0,0,0],["rybmultirepuestos","RYB MULTIREPUESTOS","","","U","unknown",1,0,0],["marellinora","NORA MARELLI","R SIMON 1577 S/N","EMPLEADO","F","60+",0,-33.690762,-59.513319],["iursi","IGNACIO URSI","AYACUCHO 3235","ESTUDIANTE","M","26-35",0,-33.692977,-59.5054],["labarcaeventosok","LA BARCA EVENTOS","","","U","unknown",1,0,0],["cintia2248","CINTIA GALVAN","SAN LORENZO 560","SIN OCUPACION","F","36-45",0,-33.697762,-59.508293],["moriestefania","ESTEFANIA MORI","M.MORENO 1239","SIN OCUPACION","F","36-45",0,-33.697847,-59.507834],["relojeriabaradero","RELOJERIA BARADERO","","","F","unknown",1,0,0],["hugo_gimeneez","HUGO GIMENEZ","ASTIGUETA JOSE 155","ESTUDIANTE","M","26-35",0,-33.69199,-59.50998],["contactoriojaok","CONTACTO RIOJA","","","U","unknown",1,0,0],["walterpanno","WALTER PANNO","COLOMBRES 1260 DPTO/CASA:DTO.3","EMPLEADO","M","46-60",0,-33.697884,-59.50671],["romii.pasteleria","ROMINA CAC","CABRERA 1920","ESTUDIANTE","F","26-35",0,-33.694454,-59.509131],["silvinapisaco","SILVINA PISACO","SAAVEDRA 2781","NO CONSTA","F","26-35",0,0,0],["gbbcgbvj","(No identificado)","","","U","unknown",0,0,0],["arroyonors","NORMA ARROYO","SAAVEDRA 2274 0","","F","18-25",0,0,0],["maximiliano_pelay","MAXIMILIANO PELAY","GODOY CRUZ 1670","AMA DE CASA","M","26-35",0,-33.691354,-59.506657],["pabloramieri","PABLO RAMIERI","MITRE 196 0","ESTUDIANTE","M","26-35",0,-33.696537,-59.512324],["jb_importados2","JB IMPORTADOS","","","U","unknown",1,0,0],["juu.medinaa","JULIÁN MEDINA","DOLLERA 3310 0","","U","26-35",0,-33.69207,-59.51513],["loly_0407","LOLY","MITRE 2881","NO CONSTA","U","26-35",0,-33.69256,-59.510791],["claudiabeatriz.silv","CLAUDIA SILVESTRE","LIBERTAD 2899","EMPLEADO","F","46-60",0,-33.694124,-59.506302],["ginoagustinrivero","AGUSTIN RIVERO","LIBERTAD 1850 0 0","AMA DE CASA","M","26-35",0,-33.696115,-59.505797],["maxikioscoelrapa","MAXIKIOSCO EL RAPA","","","U","unknown",1,0,0],["jonatanrapalin","JONATAN RAPALIN","SERRANO 674 0","ESTUDIANTE","U","26-35",0,-33.693111,-59.506499],["f.dylanleonel","DYLAN LEONEL FERNÁNDEZ","","","U","18-25",0,0,0],["nancysaralegui","NANCY SARALEGUI","PASO 516 S/N","ESTUDIANTE","F","46-60",0,0,0],["mercaditodelmedio","MERCADITO DEL MEDIO","","","U","unknown",1,0,0],["farilr26","FARI LR","O'ROARKE JULIГЃN 3392 0 0","ESTUDIANTE","U","26-35",0,0,0],["karuu_costilla","KARUU COSTILLA","MALABIA 972","","U","18-25",0,-33.695802,-59.511542],["iostech.baradero","IOSTECH BARADERO","","","U","unknown",1,0,0],["omanicler","OLGA MANICLER","SALGUERO 2060","AMA DE CASA","F","60+",0,0,0],["mirian3507","MIRIAN JUAREZ","JUNIN 2325","AMA DE CASA","U","46-60",0,-33.698618,-59.510461],["demian_okk14","DEMIAN","GUEVARA CHE 779","ESTUDIANTE","U","26-35",0,0,0],["francobarbarani","FRANCO BARBARANI","SAN MARTIN 730","AMA DE CASA","M","26-35",0,-33.694523,-59.506964],["nenasmalaz","NENAS MALAZ","","","U","unknown",1,0,0],["calycejas","CALY CEJAS","SAN LORENZO 239","EMPLEADO","U","36-45",0,-33.696351,-59.507529],["caandegerbaudo","CANDELA GERBAUDO","MARTIN DE GAINZA 2470","ESTUDIANTE","F","46-60",0,-33.70171,-59.511716],["elmayoristabaradero","EL MAYORISTA BARADERO","","","U","unknown",1,0,0],["sophie.crochet.2","SOPHIE CROCHET","","","U","unknown",1,0,0],["fabri28767","FABRI MONTES","MITRE 2248","NO CONSTA","U","26-35",0,-33.69482,-59.510093],["joaquin00025","JOAQUIN VERON","DOLLERA 3379","SIN OCUPACION","M","26-35",0,-33.692529,-59.51384],["cambiassogaston","GASTON CAMBIASSO ORDIALES","AMEGHINO FLORENTINO 380","EMPLEADO","U","46-60",0,-33.691063,-59.513872],["juventudflr","JUVENTUDES FL","","","U","unknown",1,0,0],["jacinmarino","JACIN MARINO","MITRE 1580","ESTUDIANTE","U","46-60",0,-33.69464,-59.510663],["muchiutfernanda","FERNANDA MUCHIUT","ACEVEDO 655","LICENCIADO EN PSICOLOGIA","F","26-35",0,-33.693323,-59.50881],["cocogomez_30","COCO GÓMEZ","L.PIГ‘EIRO 1151","SIN OCUPACION","U","36-45",0,0,0],["almironjulian","JULIAN ALMIRON","GODOY CRUZ 2111 0","ESTUDIANTE","M","26-35",0,-33.69683,-59.510777],["briargg","BRIAN GALVÁN","ASTIGUETA 91","ESTUDIANTE","M","26-35",0,-33.695137,-59.507293],["nelsonpalermo727","NELSON PALERMO","ROLDAN BELISARIO 687","AMA DE CASA","U","60+",0,0,0],["romanberdon","ROMAN BERDON","PADRE MUJICA 1813","ESTUDIANTE","U","26-35",0,0,0],["edua.rdo11699","EDUARDO BOTTI","","","M","26-35",0,0,0],["inflables_pilar","INFLABLES PILAR","","","U","unknown",1,0,0],["milagros_carabajal90","MILI","RUTA 41 KM 113 S/N","","U","18-25",0,0,0],["luca._rios","LUCASSJ𓆰𓆪","","","U","26-35",0,0,0],["diegojaviercasco","DIEGO JAVIER","JUJUY Y GODOY CRUZ S/N","NINGUNA","M","26-35",0,-33.692104,-59.503683],["menguavanesa","VANESA MENGUA","PACHECO DE MELO 1370","PINTOR","F","46-60",0,-33.69406,-59.504344],["sagastakalil","KALIL SAGASTA","GORRITI 1028","ESTUDIANTE","U","26-35",0,-33.69891,-59.512244],["eduardoelmeaudy","EDUARDO ELMEAUDY","LAPRIDA 672","CONTADOR PUBLICO NACIONAL","M","46-60",0,0,0],["spartabox2025","ESPARTANOS BOX BARADERO","","","U","unknown",1,0,0],["lequigobetti","EZEQUIEL GOBETTI","BELISARIO ROLDAN 640","EMPLEADO","M","36-45",0,0,0],["geor_espinosa","GEOR GEOR","SERRANO 925 0","SIN OCUPACION","U","26-35",0,-33.694021,-59.50239],["fy_b_baradero","F&B BARADERO","","","U","unknown",1,0,0],["cirooiglesiaas_","𝓬𝓲𝓻𝓸𝓸𝓸","PUEYRREDON 985","ESTUDIANTE","U","26-35",0,-33.695309,-59.506644],["yamicaballerok","YAMILA CABALLERO","SERRANO 675 0","ESTUDIANTE","F","26-35",0,-33.693329,-59.502942],["mauronegre","MAURO NEGRÉ","DOLLERA 979","EMPLEADO","M","36-45",0,-33.69383,-59.514403],["baradero360_","BARADERO360","","","U","unknown",1,0,0],["juliihlucena","JULIETA LUCENA","MITRE 2064 0","","F","18-25",0,-33.690702,-59.5129],["quiero.milanesa","QUIERO MILANESA!!!","","","U","unknown",1,0,0],["miltonvaca33","MILTON","DORREGO 485 0","ESTUDIANTE","M","26-35",0,0,0],["francesca58051","FRANCESCA","TOMAS EDISON 215","SIN OCUPACION","F","36-45",0,0,0],["nesherboanerges","NESHERBOANERGES","","","U","unknown",0,0,0],["gait.an84","LUIS GAITAN","MORENO MARIANO 1224 0 0","ESTUDIANTE","U","26-35",0,-33.692346,-59.50958],["rl.aluminios","RL.ALUMINIOS","","","U","unknown",1,0,0],["gabrielrios8083","GABRIEL RIOS","MAZA 358","ESTUDIANTE","M","26-35",0,-33.69854,-59.509312],["aliciabeatrizlabriola","ALICIA BEATRIZ LABRIOLA","SAAVEDRA 3055","ESTUDIANTE","F","26-35",0,0,0],["leguizamonmay","MAY LEGUIZAMON","DOLLERA 1268","ESTUDIANTE","U","26-35",0,-33.692408,-59.512165],["julio27_18","JULIO GONZÁLEZ","F. AMEGHINO 150","MEDICO","U","36-45",0,-33.69153,-59.510852],["verolucero15","VERO LUCERO","MITRE 1585","AMA DE CASA","U","36-45",0,-33.692766,-59.508663],["lallana.leonardo","LEONARDO LALLANA","BULNES 410","ESTUDIANTE","U","26-35",0,-33.699887,-59.508645],["camilof.cordoba","CAMILO CORDOBA","","","U","26-35",0,0,0],["eduardo_alfeo","EDUARDO ALFEO","PASSO 1232","OPERADOR","M","46-60",0,-33.693374,-59.509979],["jorgegabrielabalos1","JORGE ABALOS","ROCA S/N DPTO/CASA:S/N","SOLDADOR","M","26-35",0,0,0],["barbymiranda.1979","BARBARA MIR","ASTIGUETA JOSE 71","ESTUDIANTE","F","26-35",0,-33.691724,-59.509067],["damianlachter","DAMIÁN LACHTER","CUARTEL 3В° S/N","MEDICO","U","36-45",0,0,0],["maxi94770","MAXIMILIANO ESPINOZA","","","M","26-35",0,0,0],["fran_frc1","𝖋𝖗𝖆𝖓𝖓","MITRE 2248","NO CONSTA","U","26-35",0,-33.691032,-59.511319],["cebrian.marcelo","MARCELO CEBRIAN","SANCHEZ DE BUSTAMANTE 2034","AMA DE CASA","M","60+",0,-33.700001,-59.502246],["patonedenak","PATON EDENAK","MORENO MARIANO 150","OBRERO","U","36-45",0,-33.690698,-59.513881],["abbygueil","ABBY VELIZ","ROLDAN BELISARIO 687","","U","26-35",0,0,0],["mel.pascuali","MELI PASCUALI","GALLO 231","ESTUDIANTE","U","26-35",0,-33.696249,-59.501431],["nancochi07","NANCY VERONICA RETAMOZO","HERNANDARIAS 255","ESTUDIANTE","F","26-35",0,0,0],["romancarloni","ROMÁN CARLONI","AYACUCHO 929","ESTUDIANTE","U","36-45",0,-33.697029,-59.51041],["quirozorlando.19","ORLANDO QUIROZ","R.SIMON 2355 S/N","ESTUDIANTE","U","26-35",0,-33.696368,-59.507567],["carlosgallardo6604","CARLOS GALLARDO","DOLLERA 842","AMA DE CASA","M","36-45",0,-33.689169,-59.516256],["_luabanegas","𝕷𝖚𝖆𝖓𝖆 𝖇𝖆𝖓𝖊𝖌𝖆𝖘","MALVINAS 103","JARDINERO","U","26-35",0,0,0],["emilse.otarola","EMILSE OTAROLA","J.O ROARKE 3151","POLICIA","U","36-45",0,0,0],["maitenn01","MAITEN BARROS","HERNANDARIAS 67","","U","18-25",0,0,0],["solcito_flores00","SOLCITO_","R.SIMON 1259","ESTUDIANTE","U","26-35",0,-33.690429,-59.513417],["dai.salvarrey","DAI SALVARREY","LUGONES LEOPOLDO 140 0","ESTUDIANTE","U","26-35",0,0,0],["guilleraponi1995","GUILLERMO RAPONI","GORRITI 1341","MECANICO","M","46-60",0,-33.699024,-59.509112],["brenvillagran21","BREN VILLAGRAN","","","U","26-35",0,0,0],["moretti_baradero","GABRIEL MORETTI","COLOMBRES 485 0","ESTUDIANTE","M","26-35",0,-33.696607,-59.508883],["rymtecnicoinstalador","RYM CLIMA TECNICO INSTALADOR","","","U","unknown",1,0,0],["duck9.sport","DUCK9","","","U","unknown",1,0,0],["alexismalacalza","ALEXIS MALACALZA","GALLO 414","","U","26-35",0,-33.698531,-59.505529],["nazuenredes","NAZU FERREYRA","BOEDO 1472","ESTUDIANTE","U","36-45",0,-33.695506,-59.509829],["santella.claudio","CLAUDIO SANTELLA","N.AVELLANEDA 651 S/N","DOCENTE","M","60+",0,0,0],["goofy.yorkshireterrier","GOOFY","","","U","unknown",1,0,0],["silvinaaelen","SILVINA AELEN","MALABIA 1501","RADIOLOGO","F","46-60",0,-33.697863,-59.511284],["gabrielmalacalza","GABRIEL MALACALZA","MALABIA 895","AMA DE CASA","M","60+",0,-33.698693,-59.505239],["coricebrian","CORINA CEBRIÁN","PEDRO ALONSO 755 S/N","ESTUDIANTE","F","36-45",0,0,0],["luqui.tobares","LUQUI.TOBARES","","","U","26-35",0,0,0],["juancarlos.escudero.313","JUAN CARLOS ESCUDERO","MAIPU 895 0","EMPLEADO","M","60+",0,-33.695909,-59.508038],["jonathan_ariel_porcel","JONATHAN ARIEL PORCEL","SAN MARTIN 1229","ESTUDIANTE","M","26-35",0,-33.698805,-59.512951],["matias79979","MATÍAS BANEGAS","MAIPU 3380","SIN OCUPACION","U","46-60",0,-33.697406,-59.510533],["veronica.higueras","VERONICA HIGUERAS","O'ROARKE JULIГЃN 2935","AMA DE CASA","F","46-60",0,0,0],["mcaputto","MARTIN CAPUTTO","URIARTE 479","NO CONSTA","M","26-35",0,-33.693989,-59.512202],["municipalidadsalto","MUNICIPALIDAD DE SALTO","","","U","unknown",1,0,0],["agusulaula","AGUS","","","U","26-35",0,0,0],["maxi.rocha.52459","MAXI ROCHA","SARMIENTO 271","ESTUDIANTE","M","26-35",0,-33.698423,-59.506437],["gauna9476","ALEJANDRA GAUNA","ACEVEDO 422 0","ESTUDIANTE","F","26-35",0,-33.691978,-59.510109],["torrezcristian828","CRISTIAN TORREZ","SAN MARTIN 1287 0 0","ESTUDIANTE","M","36-45",0,-33.692286,-59.509607],["primaria15baradero","BARTOLOME MITRE","MITRE 2991","ESTUDIANTE","U","26-35",0,-33.695156,-59.507797],["patagones1414","PATAGONES1414","","","U","unknown",1,0,0],["jeronimomveliz","JERÓNIMO MARÍA VÉLIZ","GORRITI 971","NO CONSTA","U","26-35",0,-33.698741,-59.50599],["gustavofcandia","GUSTAVO FABIÁN CANDIA","MORENO MARIANO 1224 0 0","ESTUDIANTE","M","26-35",0,-33.694823,-59.507808],["bruno.brizzi","BRUNO BRIZZI","SAAVEDRA 2635","ESTUDIANTE","U","26-35",0,0,0],["daniel9591544","DANIEL GAUNA","MORENO MARIANO 1224 0 0","ESTUDIANTE","M","26-35",0,-33.692369,-59.510545],["maguipiteo","MAGI PITEO","MAIPU 3388","SIN OCUPACION","U","36-45",0,-33.694969,-59.506999],["agustin_hausch","AGUS HAUSCH","MORENO MARIANO 805","ESTUDIANTE","U","26-35",0,-33.690575,-59.51173],["paoprade","PAOLA PRADÉ","MEDRANO 629","ESTUDIANTE","F","26-35",0,0,0],["corinapaulapineda","CORINA PAULA PINEDA","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.69728,-59.508551],["estampados_textil_baradero","ESTAMPADOS TEXTIL","","","U","unknown",1,0,0],["____delfinna","🌼","","","U","unknown",1,0,0],["electricidad_gastonsosa","GASTON SOSA","DOLLERA 1039","DOCENTE","U","46-60",0,-33.690034,-59.511565],["javier.yacoy","JAVO","THAMES 160","ESTUDIANTE","U","26-35",0,-33.700179,-59.501767],["renzopaganini","RENZO PAGANINI","MARIANO MORENO 1171","AMA DE CASA","U","26-35",0,-33.696415,-59.514939],["beagaldame","BEATRIZ 🌺","DEL CORRO 0","ESTUDIANTE","U","26-35",0,-33.701642,-59.504731],["facu_dellavalle22","FAA CUU","DEL CORRO 0","ESTUDIANTE","F","26-35",0,-33.702825,-59.502366],["conniemacmullen","CONNIE MAC MULLEN","ALONSO PEDRO 245","AMA DE CASA","U","36-45",0,0,0],["lau.reyna","MARIA LAURA REYNA","BOEDO 1336 0","EMPLEADO","F","36-45",0,-33.696513,-59.511907],["me.genoud","MARÍA EMILCE GENOUD","PIГ‘EIRO LINO 845","AMA DE CASA","F","36-45",0,0,0],["accesoriosconproposito7","ACCESORIOS CON PROPÓSITO","","","U","unknown",1,0,0],["jonatancastell","JONATAN CASTELL","AYACUCHO 745 0","ESTUDIANTE","U","36-45",0,-33.695603,-59.512401],["juanchidicarlo","JUANCHI DICARLO","PASSO S/N","AMA DE CASA","U","60+",0,-33.696709,-59.509904],["adrianarodriguez.2026","ADRIANA BEATRIZ RODRÍGUEZ","M.BELGRANO 2625 S/N","AMA DE CASA","F","46-60",0,-33.696242,-59.508406],["caamilaa_ledesma","CAMI 🌱🌱","DORREGO 485 0","ESTUDIANTE","U","26-35",0,0,0],["lasusi022","SUSANA GIMENEZ","JOSE MARIA PAZ MZ 53K S/N","EMPLEADO","F","36-45",0,0,0],["sannsoto_","SOTO SANTINO","PUEYRREDON 985","ESTUDIANTE","U","26-35",0,-33.696147,-59.506129],["marieladupuy","MARIELA DUPUY","URIARTE 445 0","SIN OCUPACION","F","46-60",0,-33.695256,-59.513748],["juan_garcia233","JUAN GARCÍA","PERITO MORENO 884","NO CONSTA","M","26-35",0,-33.690649,-59.511915],["fabianaboonman","MARCELA BOONMAN","DOLLERA S/N","SIN OCUPACION","F","46-60",0,-33.690826,-59.51131],["habitatpilar","SUBSECRETARÍA DE GESTIÓN SOCIAL DEL HÁBITAT","","","F","unknown",1,0,0],["natygomezz28","NATALIA GOMEZ","GAZCON 231","ESTUDIANTE","F","26-35",0,0,0],["j.u.a.n_134","JUAN","RIVADAVIA 390","ESTUDIANTE","M","26-35",0,0,0],["antoo_vanloo","ANTONELA ANTONELA VANLOO","RIVADAVIA 390","ESTUDIANTE","F","26-35",0,0,0],["monicacabreragiorgio","MONICA CABRERA GIORGIO","AVELLANEDA 161","EMPLEADO","F","46-60",0,0,0],["leoperisbaradero","LEO PERIS","ROQUE S. PEГ‘A 330 S/N","EMPLEADO","U","60+",0,0,0],["jorgetartaglione","JORGE TARTAGLIONE","MAZA 421","ESTUDIANTE","M","26-35",0,-33.698262,-59.508574],["fiestamas_40","FIESTA MAS 40 OFICIAL","","","F","unknown",1,0,0],["andres.corcoran","ANDRÉS CORCORAN","DORREGO 320 0","PEON","U","46-60",0,0,0],["eve14_casco19","EVEELYN CASCO","MALABIA 887","ESTUDIANTE","U","26-35",0,-33.695426,-59.5123],["malenna96","MALENA SOSA","4 DE FEBRERO 495 0","ESTUDIANTE","F","26-35",0,-33.690919,-59.513783],["federicoescobar07","FEDERICO ESCOBAR","GODOY CRUZ 3315 0","JORNALERO","U","46-60",0,-33.691917,-59.508948],["sil__perez","SILVANA PEREZ","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.699711,-59.505969],["patovalentin10","PATO VALENTIN","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.697628,-59.512039],["jmp_960_la","JMP 960","","","U","unknown",1,0,0],["yuliuscm42","YULIUS","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.697726,-59.508643],["impactobaradero","FM IMPACTO BARADERO","","","U","unknown",1,0,0],["angie_baradero","ANGIE AN","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.698133,-59.504852],["catalina_.galvan","CATALINA","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.696293,-59.508513],["mabelcomenti","MABEL COMENTI","J.MARMOL 36","AMA DE CASA","F","60+",0,0,0],["ignaciozapata550_","NACHO ZAPATA","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.70006,-59.505861],["frio_norte_refrigeracion","FRÍO NORTE REFRIGERACIÓN","","","U","unknown",1,0,0],["panaderiaelvasquito","EL VASQUITO","","","U","unknown",1,0,0],["fran16_romero","FRAN ROMERO","ACEVEDO 350 BARADERO","SIN OCUPACION","U","26-35",0,-33.693994,-59.506399],["lauracastro703","LAURA CASTRO","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.6973,-59.511797],["hegimarcelo","MARCELO HEGI","GALLO 231 0","SIN PROFESION","M","46-60",0,-33.695359,-59.507266],["ldg.digitalmarket","MARKETING DIGITAL BARADERO","","","U","unknown",1,0,0],["angelica.montero.12576","ANGELICA MONTERO","JULIAN OВґROARKE 3392","AMA DE CASA","F","60+",0,0,0],["silviaperez7837","SILVIA PEREZ","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.697829,-59.512168],["ale_ziehm","MA. ALEJANDRA ZIEHM","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.700289,-59.50481],["caballero_enzo25","CABALLERO ENZO","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.6995,-59.507485],["guille_righini","GUILLOTE","CHE GUEVARA 806","EMPLEADO","U","36-45",0,0,0],["de_taquito.indumentaria","DE TAQUITO CAMISETAS","","","U","unknown",1,0,0],["naturalfitt1983","NATURAL FITT","","","U","unknown",1,0,0],["ludmila_rossiter","LUDMILA ROSSITER","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.698902,-59.508499],["nat.yog_","NATURALYOG YOGURES","","","U","unknown",1,0,0],["vanesagenes","VANESA","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.697155,-59.504668],["barbararetamozo96","BARBARA RETAMOZO","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.69999,-59.505062],["emilio.miceli","EMILIO MICELI","COLOMBRES 733","ESTUDIANTE","M","26-35",0,-33.69868,-59.506267],["bri.retamoso15","BRISA RETAMOSO","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.694903,-59.50669],["horisberger.inmobiliaria","ESTEBAN HORISBERGER 📍BARADERO","E.BULNES 246","EMPLEADO","U","46-60",0,-33.702475,-59.507282],["romybramajo","ROMINA BRAMAJO","SERRANO 141","ESTUDIANTE","F","36-45",0,-33.700463,-59.50436],["ale_.sarco","ALE💥","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.699003,-59.507745],["educacion_fisica_baradero","EDUCACIÓN","","","U","unknown",1,0,0],["coppaevita","LUISA EVA COPPA","GENOUD EMILIO 218","EMPLEADO","F","60+",0,-33.699195,-59.512786],["erika.gimenez_","ERI GIMENEZ","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.698331,-59.50603],["ameliaisabel_rojas","AMELIA ROJAS","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.69682,-59.509769],["franco.261156","FRANCO PERROTA","COLOMBRES 733","ESTUDIANTE","M","26-35",0,-33.698567,-59.506352],["pablosandoval156","PABLO SANDOVAL","URIARTE 618","AMA DE CASA","M","36-45",0,-33.697007,-59.510391],["fernandomartinez1025","FERNANDO MARTINEZ","COLOMBRES 733","ESTUDIANTE","M","26-35",0,-33.693807,-59.505474],["fuerzapatriaa","FUERZAPATRIAA","","","F","unknown",1,0,0],["albanofarid","ALBANO FARID D'AGOSTINO","DORREGO 305","","U","26-35",0,0,0],["troussellorena","LORENA","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.696587,-59.505153],["laurabaicochea","LAURA","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.693174,-59.505304],["eribracco","ERII BRACCO","GAZCON 879","SIN OCUPACION","U","26-35",0,0,0],["derivadax","BRIAN","COLOMBRES 733","ESTUDIANTE","M","26-35",0,-33.695959,-59.507951],["guadalupesegre","GUADALUPE SEGRE","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.693789,-59.505661],["calzadosboffo","CALZADOS BOFFO","","","U","unknown",1,0,0],["bartolinibraian7","BRAIAN BARTOLINI","LAVALLE 395 0","ESTUDIANTE","M","26-35",0,-33.693698,-59.509504],["micaelamia71","MIA MICAELA ✨","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.692564,-59.511634],["_orniifrancco","ORNELLA","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.696998,-59.508842],["empa.nadas_ale_419","EMPA.NADAS ALE","","","U","unknown",1,0,0],["mariaagiubi","MARIA BOBADILLA","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.694188,-59.508021],["saludsalto","SALUD SALTO","","","U","unknown",1,0,0],["cocofragancias","COCO FRAGANCIAS","","","U","unknown",1,0,0],["gracielalamoro","GRACIELA LAMORO","BELGRANO 2651","AMA DE CASA","F","36-45",0,-33.694357,-59.511564],["micamorocha22","MICA THOMAS","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.696262,-59.509527],["j.essi2208","JESSI 😘💅🏽","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.695462,-59.507676],["postresbaradero_","POSTRES","","","U","unknown",1,0,0],["samirr6561","SAMIR","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.700115,-59.507878],["suremaaroe","SUREMA AROE","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.695159,-59.504519],["maximilianobrutti","LONCOMEO","CHACABUCO 1497","EMPLEADO","U","36-45",0,0,0],["stladuarte","STLA DUARTE","O'ROARKE JULIГЃN 2122","MECANICO","F","60+",0,0,0],["angeless_moda","ANGELES MODA","","","U","unknown",1,0,0],["nazareno_ccc","NAZARENO CCC","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.695265,-59.506566],["ale21_jimenez","ALE JIMÉNEZ","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.696891,-59.508581],["aliciainessaavedra","ALICIA INES SAAVEDRA","ASTIGUETA JOSE 75 0 0","EMPLEADO","F","46-60",0,-33.692405,-59.506594],["nancypanepinto","NANCY PANEPINTO","ESQUINA MARIANO MORENO 5","ESTUDIANTE","F","36-45",0,-33.692188,-59.513869],["hernandezpitu","HERNANDEZ VALE GAEL","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.694282,-59.508536],["quintamaru","QUINTA MARU","","","F","unknown",1,0,0],["paola.eli.guada_","PAOLA IBAÑEZ","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.695655,-59.505166],["malacalzaclaudiaraquel","CLAUDIA RAQUEL MALACALZA","BELGRANO MANUEL 1858","ESTUDIANTE","F","60+",0,-33.692846,-59.512413],["papu_zrt_12","ACTITUD X POR ACTITUD","","","U","unknown",1,0,0],["taa_qnt","𝘛𝘢𝘢_𝘘𝘯𝘵 ❤️‍🔥","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.696533,-59.505718],["juegoenuna","JUAN","COLOMBRES 733","ESTUDIANTE","M","26-35",0,-33.699976,-59.511627],["maltina_","MALTINA_","","","U","unknown",1,0,0],["lopezdai.2025","DAIANA LÓPEZ","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.693022,-59.510021],["louhrhfgzjkzuzkxj","LOUHRHFGZJKZUZKXJ","","","U","unknown",1,0,0],["tu_negrito","TU_NEGRITO","","","U","unknown",1,0,0],["cand_e9707","CANDEE_777","","","U","unknown",1,0,0],["brenchamorroo_","BRENCHAMORROO_","","","U","unknown",1,0,0],["albertocirigliano","ALBERTO CIRIGLIANO","","","M","unknown",1,0,0],["maniclervaleria","VALERIA MANICLER","MALABIA 1850","AMA DE CASA","F","36-45",0,-33.700828,-59.506391],["adrianportillok","ADRIAN PORTILLO","MITRE 1344","EMPLEADO","M","36-45",0,-33.692141,-59.51169],["mansilla_yesii","YESII MANSILLA","SAN LORENZO 260 0","ESTUDIANTE","U","26-35",0,-33.692207,-59.506791],["luccc_spina","LUCA SPINA","","","F","unknown",1,0,0],["ledesmadylan_","DYLAN LEDESMA","","","U","26-35",0,0,0],["indaburos","SOLE INDABURO","T.ROSELL 1941","EMPLEADO","F","46-60",0,0,0],["negranob11","LUNOB MARTINEZ","","","U","unknown",1,0,0],["maxi_troncoso_","KITO 🧃","","","U","unknown",1,0,0],["johanna_quiroga96","JOHANNA QUIROGA","","","F","unknown",1,0,0],["erikasoledadkopf","ERIKA KOPF","GALLO Y C. BARROS MZA 58E","SIN OCUPACION","F","26-35",0,-33.694847,-59.502739],["jorgevaldez9413","JORGE VALDEZ","","","M","unknown",1,0,0],["facundoocejas","FACUNDOCEJAS","","","U","unknown",1,0,0],["dylan.lcrn","DYLAN","","","U","unknown",1,0,0],["anaabeelmasella","DAMZ MASELLA","","","U","unknown",1,0,0],["luz_menta_sol","MAR","","","U","unknown",1,0,0],["iaaruu._.2","IAARUU","","","U","unknown",1,0,0],["_mathy.p","MATHY PARZON","","","U","unknown",1,0,0],["tatogimenez.19","TATOGIMENEZ.19","","","U","unknown",1,0,0],["merydesimone__","MEERYY DESIMONE","","","U","unknown",1,0,0],["jose_galdeano_z","JOSE GALDEANO ZARATE","","","M","unknown",1,0,0],["iancardozo12","IANCARDOZO","","","U","unknown",1,0,0],["enzotognocchi","ENZO TOGNOCHI","","","M","unknown",1,0,0],["marcosgimenez1980","MARCOS GIMÉNEZ","","","M","unknown",1,0,0],["xiomirobless","XIOROBLES📿","","","U","unknown",1,0,0],["bechtholtgabriel","GABRIEL BECHTHOLT","ACEVEDO 210 S/N","ESTUDIANTE","M","26-35",0,-33.698329,-59.509013],["meli_cunningham","MELI CUNNINGHAM","LOS FRESNOS 1310","EMPLEADO","U","36-45",0,0,0],["vieraemma","EMMA VIERA DABOVE","","","F","unknown",1,0,0],["benitezmarceloroman12","RIO REVUELTO BENO","","","U","unknown",1,0,0],["massiii_martinelli16","♡𝓪𝓲𝓶𝓮́ & 𝓶𝓲𝓼𝓪𝓮𝓵 ♡","","","U","unknown",1,0,0],["45.321834","453218.0","","","U","unknown",1,0,0],["flor.alvez.14","FLOR ALVEZ","GALLO 999 S/N","SIN OCUPACION","F","26-35",0,-33.693012,-59.505535],["celesteh2025","CELESTEH2025","","","U","unknown",1,0,0],["iaaruuu._.1","IAA","","","F","unknown",1,0,0],["fabianfernandez1964","FABIAN FERNANDEZ","","","M","unknown",1,0,0],["marezebarraza","MARCOS BARRAZA","","","M","unknown",1,0,0],["veysolwilhjelm","VEYSOLWILHJELM","","","U","unknown",1,0,0],["joha_jacob","JOHA JACOB","DORREGO 763","NO CONSTA","F","36-45",0,0,0],["benicassino","BENI","","","U","unknown",1,0,0],["romirosemberg","ROMI POLIZANO ROSEMBERG","","","U","unknown",1,0,0],["rodiaz_001","RO_DIAZ 💯","","","U","unknown",1,0,0],["tatianamaehler","TATIANA MAEHLER","CARRASCO 603","AGRICULTOR","F","26-35",0,0,0],["jg10_galvan","JUAN","","","M","unknown",1,0,0],["cirito_rs","CIRITO_LA💥","","","U","unknown",1,0,0],["kevi.n20m","KEVIN MACHADO","","","U","unknown",1,0,0],["milii_guardia27","MILAGROS GUARDIA","SERRANO 859","AMA DE CASA","F","46-60",0,-33.697875,-59.507273],["gimenez_mariaelizabeth","MARIA ELIZABETH GIMENEZ","SIMON RENE 621","AMA DE CASA","F","46-60",0,-33.69273,-59.509176],["joaquinezequielbaradero4","PESCA BARADERO","","","F","unknown",1,0,0],["cm7514309","CM7514309","","","U","unknown",1,0,0],["marti_caceres20","MARTII💎💝","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.694452,-59.506782],["karendecesare83","KAREN DE CESARE","FACUNDO QUIROGA 221","SIN OCUPACION","U","26-35",0,-33.698709,-59.509447],["valeriagonzalez5911","VALERIA GONZALEZ","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.700188,-59.509191],["creaciones270grados","GRAFICA C-270","","","F","unknown",1,0,0],["larrosayanina","YANINA LARROSA SAAVEDRA","COLOMBRES 1798","AMA DE CASA","F","36-45",0,-33.69923,-59.505951],["ricardo118071","RICARDO MARTINEZ","","","U","unknown",1,0,0],["claudioacosta13","CLAUDIO ACOSTA","","","M","unknown",1,0,0],["leaaducasse","LEAA DUCASSE","","","F","unknown",1,0,0],["gonzalobecerramp","GONZALO","","","U","unknown",1,0,0],["oter.ofernando","FERNANDO OTERO","","","M","46-60",0,0,0],["bresanvale","VALE BRESAN","","","U","unknown",1,0,0],["romi_chapuis","ROMII CHAPUIS","DEL CORRO 1860 0 0","SIN OCUPACION","U","36-45",0,-33.70028,-59.501603],["losgutide","LOS GUTI DE BARADERO","","","U","unknown",1,0,0],["guerraprisci","PRISCI GUERRA","SANCHEZ DE BUSTAMANTE 1665","ESTUDIANTE","U","26-35",0,-33.699939,-59.503181],["gabiiramirez09","GABRIELA RAMIREZ","RENE SIMON 1830","DOCENTE","F","26-35",0,-33.694672,-59.500361],["lucas.otero.18","LUCAS OTERO","COLOMBRES 733","ESTUDIANTE","M","26-35",0,-33.699463,-59.508074],["frolitas_laesperanza","FROLITAS LA ESPERANZA","","","U","unknown",1,0,0],["majo_santa_cruz","DENISE SANTA CRUZ","PASTEUR LUIS 111","AMA DE CASA","F","46-60",0,0,0],["elias.pellegrino","ELIAS PELLEGRINO","4 DE FEBRERO 102 0 0","ESTUDIANTE","M","36-45",0,-33.693211,-59.514122],["maria.2184","MARIA REAÑOS","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.699126,-59.511745],["kevin__altamiranda","KEVIN ALTAMIRANDA","DEL CORRO 2971","","U","26-35",0,-33.702138,-59.503792],["fbnauticaytaller","FUERA DE BORDA (NAUTICA Y TALLER)","","","F","unknown",1,0,0],["7649guillermo","GUILLERMO ERASO","COLOMBRES 733","ESTUDIANTE","M","26-35",0,-33.698798,-59.508545],["franco.perez93","FRANCO PEREZ","PUEYRREDON 751","ESTUDIANTE","M","26-35",0,-33.690047,-59.505548],["briqu_intero","BRIANA QUINTERO","PEDRO ALONSO 1335 S/N","JORNALERO","F","36-45",0,0,0],["mateoo_lacuadraa","MATEO LACUADRA","GODOY CRUZ 2035","","M","18-25",0,-33.698045,-59.504629],["iaraiozzialavanchy","IARA IOZZIA LAVANCHY","4 DE FEBRERO 237 0","","F","18-25",0,-33.690951,-59.509955],["mil_caprichos_","YESSICA VACCAREZZA","","","F","unknown",1,0,0],["alvaroerolando","ALVARO EMMANUEL ROLANDO","","","U","unknown",1,0,0],["trinidadballines9","TRINI","","","U","unknown",1,0,0],["clauuuudia_2025","CLAUDIA SILVA","","","F","unknown",1,0,0],["thiii_gz","GOMEZ THIAGO","","","U","unknown",1,0,0],["itss_zoe21","ZOO🪐","","","U","unknown",1,0,0],["beenjachivel","BENJA CHIVEL","","","F","unknown",1,0,0],["schansenbach_paola","PAOLA SCHANSENBACH","","","F","unknown",1,0,0],["ami_garcia03","AMI GARCIA🦋","","","U","unknown",1,0,0],["esteesminick","MATIAS COLOMBO","","","M","unknown",1,0,0],["gabrielalbertohernando","GABRIEL ALBERTO HERNANDO","GAINZA MARTIN DE 3245","EMPLEADO","M","36-45",0,-33.696902,-59.512395],["antodiiazzz__","𝓪𝓷𝓽𝓸𝓷𝓮𝓵𝓪 𝓭𝓲𝓪𝔃","","","U","unknown",1,0,0],["sofi_.hbr","𝓢𝓸𝓯𝓲𝓪","","","U","unknown",1,0,0],["sabri1997917","SABRINA ALVAREZ","","","F","unknown",1,0,0],["benja__24790","BENJA","","","F","unknown",1,0,0],["caroo.nacimento23","CAROO NACIMENTO","","","U","unknown",1,0,0],["nanosocial","NANOSOCIAL","","","U","unknown",1,0,0],["martinromero.09","MARTIN ROMERO","","","M","unknown",1,0,0],["gri_otero","GRI_OTERO","","","U","unknown",1,0,0],["scheuermanjonatan","JONATAN SCHEUERMAN","AYACUCHO 3295 0","DOCENTE","U","26-35",0,-33.697938,-59.505495],["noeeebogado_","🫦","","","U","unknown",1,0,0],["soloparaentendidosnaw","SOLO-PARA-ENTENDIDOS","","","U","unknown",1,0,0],["mau.carvhalo","MAURO FABIAN CARBALLO","","","M","unknown",1,0,0],["juliana.lizarrag.grigoni","JU","","","U","unknown",1,0,0],["sandyg_sep","SANDRA GALLARDO","A. LENGUITTI 1006","ESTUDIANTE","F","36-45",0,0,0],["sole.dadpbau1980","SOLE FARIAS","","","F","unknown",1,0,0],["romi.troncoso1","ROMI","","","U","unknown",1,0,0],["elian.lobat0","ELIAN LOBATO","","","U","unknown",1,0,0],["gusinsa_barber8","GUUS INSAURRALDE","","","U","unknown",1,0,0],["monicornejo9","MONI CORNEJO","","","U","unknown",1,0,0],["mateomanicler","MATEO MANICLER","O'ROARKE JULIГЃN 2122 0 0","","M","18-25",0,0,0],["ivanbaradero","SERGIO IVAN NOVELLA","SARMIENTO 271","ESTUDIANTE","M","26-35",0,-33.693175,-59.510628],["ezequielalesisovejero","EZEQUIEL ALESIS OVEJERO","COLOMBRES 733","ESTUDIANTE","M","26-35",0,-33.698116,-59.508249],["ohioropa_accesorios","OHIO ROPA Y ACCESORIOS","","","U","unknown",1,0,0],["vero_medina.15","VERO","LIBERTAD 2118","EMPLEADO","U","36-45",0,-33.694556,-59.511135],["la_argentabaradero","LA ARGENTA⭐⭐⭐","","","U","unknown",1,0,0],["mati22_k","MATI ETCHEGOYEN","SANCHEZ DE BUSTAMANTE 3149 0","EMPLEADO","U","36-45",0,-33.700571,-59.507139],["jaquelin_vargas14","YAKELIN VARGAS","AYACUCHO 865","ESTUDIANTE","U","26-35",0,-33.697547,-59.504867],["nadiamarincovich","NADIA MARINCOVICH","","","F","unknown",1,0,0],["tiago.poggi","𝑡𝑖𝑎𝑔𝑜","","","U","unknown",1,0,0],["luisalberto.vera.148","LUIS ALBERTO VERA","","","U","unknown",1,0,0],["mariaeva.lofgren.10","MARÍA EVA LOFGREN","BOLAГ‘OS 2477","AMA DE CASA","F","46-60",0,0,0],["milagrosgauna9456","MILAGROS GAUNA","BELGRANO 2651","AMA DE CASA","F","36-45",0,-33.694128,-59.510947],["alee.pinero","⧼Aℓeʝo⧽","","","U","unknown",1,0,0],["rociocorrea821","ROCÍO CORREA","","","U","unknown",1,0,0],["alicia_rojas_6","ALICIA ROJAS","","","F","unknown",1,0,0],["giselebotheatoz","GISELE BOTHEATOZ","","","U","unknown",1,0,0],["bardvanina","VANINA BARD","SANCHEZ DE BUSTAMANTE 2025","DOCENTE","F","36-45",0,-33.695454,-59.509343],["yami21862","YAMI","","","F","unknown",1,0,0],["monoacosta15","JUAN CRUZ","","","M","unknown",1,0,0],["ezequielmend","EZEQUIEL MENDELSON","ROJAS RICARDO 280","EMPLEADO","M","36-45",0,0,0],["miru_bogado","MIRU_MAXII","","","U","unknown",1,0,0],["aalesalas","ALEJANDRO SALAS","","","M","unknown",1,0,0],["cintiapetruk","CINTIA PETRUK","","","F","unknown",1,0,0],["danaacosta12","DANA ACOSTA","","","F","unknown",1,0,0],["jonathan.basualdo.50","JONI BASUALDO","D.O.ROARKE 3107 S/N","JORNALERO","U","36-45",0,0,0],["melysa_fernandez","MELYSÁ FERNÁNDEZ","","","U","unknown",1,0,0],["juanchoo._2","BRANTO JUAN CRUZ","","","U","unknown",1,0,0],["matiasbeccacece","MATIAS BECCARECE","","","M","unknown",1,0,0],["alejo_rothen","ALEJO ROTHEN","","","U","unknown",1,0,0],["marr_escalante","MARIA ESCALANTE","","","F","unknown",1,0,0],["azucena.romero.739","AZUCENA ROMERO","","","F","unknown",1,0,0],["dani.garciaa","•ƊANIELA ĜARCIA•","","","F","unknown",1,0,0],["aniita.puebla","ANIITA PUEBLA","","","F","unknown",1,0,0],["chiniita_gimenez","MIRIAM GIMENEZ","","","F","unknown",1,0,0],["ana.foppoli_","ANA","","","F","unknown",1,0,0],["emihatun","EMILIO HATUN","AYACUCHO 1426","ESTUDIANTE","M","26-35",0,-33.694282,-59.508445],["luromero930","LU🏹","","","U","unknown",1,0,0],["vicennmaisaa_","VICEN","","","U","unknown",1,0,0],["tomasss.22_","TOMASSS.22_","","","U","unknown",1,0,0],["dagostinomariaflorencia","FLOR D'AGOSTINO","SANCHEZ DE BUSTAMANTE 1845","ESTUDIANTE","F","26-35",0,-33.694547,-59.504654],["marta_martinez_935","MARTA MARTINEZ","","","F","unknown",1,0,0],["parecequefueayer52","RICARDO PÉREZ","","","U","unknown",1,0,0],["creeenti_baradero","CREEENTI_BARADERO","","","U","unknown",1,0,0],["parriluxebaradero","PARRILUXEBARADERO1","","","U","unknown",1,0,0],["tati.astra.123","TATIANA ASTRADA","","","F","unknown",1,0,0],["martinfuentes7936","MARTIN FUENTE","","","M","unknown",1,0,0],["sembrandola.palabra","SEMBRANDO LAS PALABRAS","","","U","unknown",1,0,0],["sof_ordu","🦋𝕊 ❁ 𝔽 Í 𝔸🦋","COLOMBRES 733","ESTUDIANTE","U","26-35",0,-33.699617,-59.508963],["_orimarmori","ORIANA MARMORI","PEDRO ALONSO 755 0","","F","26-35",0,0,0],["sabriiyoni19","SABRIYONII","","ESTUDIANTE","U","26-35",0,0,0],["lealandresjose","ANDRES LEAL","","ESTUDIANTE","M","26-35",0,0,0],["marianarivarola987","Ⓜⓐⓡⓘⓐⓝ","","ESTUDIANTE","U","26-35",0,0,0],["romerocande22","CANDELA ROMERO","","ESTUDIANTE","F","26-35",0,0,0],["angelessosa142","ANGELES SOSA","","ESTUDIANTE","U","26-35",0,0,0],["claribel.grd","𝑪𝒉𝒊𝒏𝒊🦋","","ESTUDIANTE","U","26-35",0,0,0],["paz_bren","B R E N P A Z🥀","","ESTUDIANTE","U","26-35",0,0,0],["jeenii._","JEENII._","","ESTUDIANTE","U","26-35",0,0,0],["electricidad.dm","ELECTRICIDAD.DM","","","U","unknown",1,0,0],["_joako.03","JOAQUÍN RODRÍGUEZ","","ESTUDIANTE","U","26-35",0,0,0],["miriam.ayrala.5","MIRIAM AYRALA","M.DE GAINZA 1885 S/N","ESTUDIANTE","F","60+",0,-33.696221,-59.511787],["cralitofelice","CRALITO FELICE","QUIROGA FACUNDO 221","ELECTRICISTA","U","46-60",0,-33.698158,-59.50924],["antonellatarino","ANTONELLA LAURA","","ESTUDIANTE","F","26-35",0,0,0],["nancy41herrera","NANCY HERRERA","","ESTUDIANTE","F","26-35",0,0,0],["cam_gonzalez0","CAMI GONZÁLEZ","","ESTUDIANTE","U","26-35",0,0,0],["leo.nelasoria","LEONELA SORIA","","ESTUDIANTE","F","26-35",0,0,0],["romiguerrero__","RG","","ESTUDIANTE","U","26-35",0,0,0],["capurro.claudio","CLAUDIO CAPURRO","","COMERCIANTE","M","46-60",0,0,0],["juanderiu","𝙅𝙪𝙖𝙣 𝘿𝙚𝙧𝙞𝙪","","ESTUDIANTE","U","26-35",0,0,0],["grizuwu","GRICELDA BALCARCE","","SIN OCUPACION","F","36-45",0,0,0],["so_copello","SOFIA COPELLO","","ESTUDIANTE","F","26-35",0,0,0],["insaurraldecelee","CELE INSAURRALDE","GODOY CRUZ 2535","ESTUDIANTE","U","26-35",0,-33.694595,-59.509035],["patriciagomez6607","PATRII GOMEZ","","ESTUDIANTE","U","26-35",0,0,0],["jouandanielok","DANIEL WALTER R. JOUAN","BULNES 66 S/N","PROFESOR","M","60+",0,-33.694999,-59.509553],["ro.aquino1313","RO AQUINO","","ESTUDIANTE","U","26-35",0,0,0],["elizabethmelchiori","ELIZABETH MELCHIORI","SAN LORENZO 170","EMPLEADO","F","46-60",0,-33.697123,-59.513374],["tobyhuanca00","☘️💫🎰","","","U","unknown",1,0,0],["frannviera12","FV","","","U","unknown",1,0,0],["sofisanchez.09","SOFI SÁNCHEZ","","","U","unknown",1,0,0],["fiorela_zabala","FIORELA ZABALA","","","F","unknown",1,0,0],["flaaheredia_","FLAA HEREDIA","","","F","unknown",1,0,0],["agos.cuenca12","AGOSTINA JAZMÍN CUENCA","","","F","unknown",1,0,0],["marinagerein","MARINA GEREIN","","","F","unknown",1,0,0],["leguizamon9650","ELIAS LEGUIZAMÓN","","","M","unknown",1,0,0],["kukiialcaraz","KUKII ALCARAZ","","","U","unknown",1,0,0],["solari_rosana_gladys","ROSI SOLARI","","","U","unknown",1,0,0],["nahiii_11","NAHIII_11","","","U","unknown",1,0,0],["den_cardozo","DENIS CARDOZO","","","U","unknown",1,0,0],["agoss.mestre","AGOOS MESTRE","","","U","unknown",1,0,0],["natalia.gisele.candi","NATALIA CANDI","","ESTUDIANTE","F","36-45",0,0,0],["fran_al10","FRAN CABJ","","ESTUDIANTE","U","unknown",0,0,0],["nicoo_pereyra24","NICOLAS","","ESTUDIANTE","M","unknown",0,0,0],["kyaru_ruizz64","KIARA RUIZ","","ESTUDIANTE","F","unknown",0,0,0],["sole202251","SOLEDAD SIMPLEMENTEEE","","ESTUDIANTE","U","unknown",0,0,0],["guidellamirna","MIRNA GUIDELLA😘","","ESTUDIANTE","F","unknown",0,0,0],["rosanaetchegoyen","ROSANA ETCHEGOYEN","","SIN OCUPACION","F","36-45",0,0,0],["maria_s85","MARIAS","","","U","unknown",1,0,0],["marilina.g91","MARILINA GARAY","","","F","unknown",1,0,0],["mtias__12","MM","","","U","unknown",1,0,0],["lautarogauna106","LAUTARO GAUNA","","","M","unknown",1,0,0],["so.ortega.1","SOFI ORTEGA","","","U","unknown",1,0,0],["menacristina671","CRISTINA MENA","F AMEGHINO 177 S/N","MECANICO","F","46-60",0,-33.692225,-59.508367],["bere.sanchezzz","BEREE✨🌻","","","U","unknown",1,0,0],["agustin6.5_m","DIEGO MARTINEZ","","","M","unknown",1,0,0],["hectorhugoholzer","HÉCTOR HUGO HOLZER ARALDI","LIBERTAD 1214 0 0","OBRERO","U","60+",0,-33.695173,-59.5078],["j1.zart","JULIAN ZARATE","","ESTUDIANTE","M","26-35",0,0,0],["barby_genoud","BARBARA GENOUD","COSSI ALFREDO 3083","","F","18-25",0,-33.689644,-59.505823],["essen_conmagui","HOLA SOY MAGUI! EMPRENDEDORA ESSEN✨️🩷","","","F","unknown",1,0,0],["marcelamariagimenezyardin","MARCELA YARDIN","","ESTUDIANTE","F","unknown",0,0,0],["diegociancio","DIEGOCIANCIO","","ESTUDIANTE","U","unknown",0,0,0],["solansh_1317","SOLANSH NUÑEZ","","ESTUDIANTE","F","unknown",0,0,0],["eze71juarez","EZEQUIEL JUAREZ","","ESTUDIANTE","M","unknown",0,0,0],["leopierottipintor","LEOPIEROTTIPINTOR","","ESTUDIANTE","U","unknown",0,0,0],["claudia.miranda.7161","CLAUDIA MIRANDA","","ESTUDIANTE","F","unknown",0,0,0],["romiiipalaciios","ROMI PALACIOS","","ESTUDIANTE","U","unknown",0,0,0],["zabalavictor","VITYZABA","","ESTUDIANTE","F","unknown",0,0,0],["natygvega","𝓝𝓪𝓽𝓪𝓵𝓲𝓪 𝓥𝓮𝓰𝓪 🏋️‍♂️","","ESTUDIANTE","U","unknown",0,0,0],["sebastiangomez.89","SEBASTIAN GOMEZ","","ESTUDIANTE","M","unknown",0,0,0],["yazminn_negre","VALU","","ESTUDIANTE","U","unknown",0,0,0],["juan.savoy.7","JUAN SAVOY","GALLO 89 S/N","EMPLEADO","M","46-60",0,-33.696472,-59.500782],["martinmiguelporretti","MARTÍN MIGUEL PORRETTI","","","U","unknown",1,0,0],["ezequielsaccani","EZEQUIEL SACCANI","","","M","unknown",1,0,0],["diegovalentin5485","DIEGO VALENTIN","","","M","unknown",1,0,0],["lisandrolobos5","LISANDRO LOBOS","","","M","unknown",1,0,0],["miltoncolombo4","MILTON COLOMBO","","","M","unknown",1,0,0],["joaqogentile","JOAQO GENTILE","","","U","unknown",1,0,0],["br.aian3696","GERMAN CARDOSO","","","M","unknown",1,0,0],["decesareneli","NELI DE CESARE","INT.CHIARELLA 1616","ESTUDIANTE","F","26-35",0,0,0],["jose_luis18_21","JOSE LUIIS","","","M","unknown",1,0,0],["laurita_noemi","LAURITA NOEMÍ","","","F","unknown",1,0,0],["bau_tibus","BAUTIBUS","","","U","unknown",1,0,0],["yohanne_16","YOHANNE RIVERO","","","F","unknown",1,0,0],["brisafernandez274","BRISA FERNANDEZ","","","F","unknown",1,0,0],["fichocabrera","FICHO CABRERA","","","U","unknown",1,0,0],["andrucelestemartinez","ANDRU CELESTE MARTINEZ ALCARAZ","","","U","unknown",1,0,0],["axel_anduaga","AXEL","","","M","unknown",1,0,0],["mihelro_decoeventos","MIHELRO DECO EVENTOS","","","U","unknown",1,0,0],["marcosgaetano","MARCOS GAETANO","","","M","unknown",1,0,0],["bellchu22","BELCHU MARTÌNEZ","","","U","unknown",1,0,0],["andreafreitestdf","ANDREA FREITES","","","F","unknown",1,0,0],["santiiii_rodriguez_","SANTINO RODRIGUEZ","","","U","unknown",1,0,0],["nataliafernandez2849","NATALIA FERNANDEZ","","","F","unknown",1,0,0],["amadeobuscaglia16","AMADEO IVAN BUSCAGLIA","","","U","unknown",1,0,0],["romii.cac","ROMINA CACERES","","","F","unknown",1,0,0],["jeremiastapiia","JEREMÍAS TAPIA","","","U","unknown",1,0,0],["9mailnucv0","9MAILNUÇV0","","","U","unknown",1,0,0],["aromas.unicos","AROMAS.UNICOS","","","U","unknown",1,0,0],["gustavo.lopez5ok","GUSTAVO LOPEZ","","","M","unknown",1,0,0],["ramosmoreirayazminabigail","YAZMINABIGAIL","","","U","unknown",1,0,0],["yoa.gonzalezz","YOANA","","","F","unknown",1,0,0],["gisela1327","GISELA","","","F","unknown",1,0,0],["priigutierrez75","PRII GUTIERREZ🤍","","","U","unknown",1,0,0],["mony_b13","MONY","","","U","unknown",1,0,0],["joii_25","JOANA GIMENEZ","","","F","unknown",1,0,0],["ignaciopacho","IGNACIO PACHO","","","M","unknown",1,0,0],["gastellujuanmanuel","JUAN MANUEL","","","M","unknown",1,0,0],["roenriques","ELIANNA","","","F","unknown",1,0,0],["myrian4905","MYRIAN MACIEL","","","F","unknown",1,0,0],["arevalop7612024","PATRICIA","","","F","unknown",1,0,0],["tamara93101","TAMARA PUEBLA","","","F","unknown",1,0,0],["daniel.siffredi","DANIEL IVAN SIFFREDI","GENOUD EMILIO 405","EMPLEADO","M","46-60",0,-33.693526,-59.511523],["ducasseariel","ARIEL DUCASSE","LAVALLE 532","EMPLEADO","M","36-45",0,-33.691858,-59.510612],["macanvrrt","MACA NVRRT","","","F","unknown",1,0,0],["monica.mazzocchi.376","MNIGRACE MZZOCC MZZOC","","","U","unknown",1,0,0],["thiagogaspe","THIAGO GASPERUZZO","","","M","unknown",1,0,0],["david.insta.cabj","DABO CONDE","","","U","unknown",1,0,0],["23.hairstudio","MAXIMILIANO PÉREZ • ESTILISTA & ASESOR DE IMAGEN.","","","M","unknown",1,0,0],["francomduran","FRANCO","","","M","unknown",1,0,0],["agoosmendolaro","AGOOS MENDOLARO","","","U","unknown",1,0,0],["fabriciosaluzzo","FABRICIO SALUZZO","","","U","unknown",1,0,0],["cecy.nieto.90","CECY NIETO","","","U","unknown",1,0,0],["eli_segoviaaa","ELISA SEGOVIA","","","F","unknown",1,0,0],["belendupuy","BELEN DUPUY","SANCHEZ LORIA 1650","ESTUDIANTE","F","26-35",0,-33.70096,-59.506936],["monicagriseldaquintero","MONICA GRISELDA QUINTERO","SERRANO 3","AMA DE CASA","F","36-45",0,-33.695295,-59.506417],["pablonicolasgallo","PABLO GALLO","PUEYRREDON 971","EMPLEADO","M","46-60",0,-33.694608,-59.503639],["somohanodaniel","DANIEL SOMOHANO","MALABIA-CALLE INTERNA-CASA 6 S/N","ESTUDIANTE","M","36-45",0,-33.697385,-59.510811],["paganinijulieta","JULIE PAGANINI","","","U","26-35",0,0,0],["mariamartademierre","MARTA DEMIERRE","GAZCON 450 S/N","AMA DE CASA","F","60+",0,0,0],["brantoalberto","ALBERTO BRANTO","GODOY CRUZ 3010","OPERARIO","M","46-60",0,-33.6964,-59.503472],["raeevolution.argentina","RAEEVOLUTION","","","U","unknown",1,0,0],["lulu.lu.2024","LULU SANCH","","","U","unknown",1,0,0],["lilianatorres036","ARACELI TORRES","","","F","unknown",1,0,0],["irma_sosa_581","IRMA SOSA","","","F","unknown",1,0,0],["yamgazal","YAMI GAZAL","","","F","unknown",1,0,0],["denidegese","𝐃enise","MITRE 1344","","U","18-25",0,-33.690904,-59.513973],["jennifer.k.m","JENNIFER MEDINA💫","","","F","unknown",1,0,0],["prats6278","CARLOS PRATS","","","M","unknown",1,0,0],["sandra.carrizo.50552","SANDRA CARRIZO","","","F","unknown",1,0,0],["mariarosapaniagua28","MARIA ROSA PANIAGUA","CABRERA 2049 S/N","EMPLEADO","F","60+",0,-33.694649,-59.507241],["_malemontano","ᴍᴀʟᴇɴᴀ","","","U","unknown",1,0,0],["carb_emanuel","CARBONEL EMANUEL","DEL CORRO 1060","AMA DE CASA","U","36-45",0,-33.698125,-59.501267],["colicchiaro","ROMI COLICCHIA","","","U","unknown",1,0,0],["laaru_1","𝙻 𝚊 𝚛 𝚊","","","U","unknown",1,0,0],["jennyfschiro","JENNY F SCHIRO","","","U","unknown",1,0,0],["ferreteria_villa_libertad","COMPLEJO COMERCIAL FERRETERÍA","","","U","unknown",1,0,0],["ruthysilvanafusi","RUTH FUSI","LINO PIГ‘EIRO 1352","AMA DE CASA","F","36-45",0,0,0],["ariana_hrz7","ARII⚡️","","","U","unknown",1,0,0],["laura7260","LAU 💖","","","U","unknown",1,0,0],["rubenyamuni","RUBEN YAMUNI","","","M","unknown",1,0,0],["distribuidora_larrosa","DISTRIBUIDORA LARROSA","","","F","unknown",1,0,0],["matiasescupidero","MATIAS RODRIGUEZ","","","M","unknown",1,0,0],["alejandromasague","ALEJANDRO MASAGUÉ","","","M","unknown",1,0,0],["griseldalopez2351","GRISELDA LOPEZ","","","F","unknown",1,0,0],["pueblanoelia","NOELIA DAIANA PUEBLA","","","F","unknown",1,0,0],["magguiacosta","MAGUI ACOSTA","","","F","unknown",1,0,0],["aria_caulin","ARIANNÉ CAULIN","","","U","unknown",1,0,0],["lavadero_akua","LAVADO Y DETALLADO DE AUTOS, CAMIONETAS Y MOTOS💦🧼🧽🫧","","","U","unknown",1,0,0],["mgmserviciosgenerales","MGM","","","U","unknown",1,0,0],["rolacerna","ROMINA LACERNA","PACHECO DE MELO 1315","ESTUDIANTE","F","36-45",0,-33.690917,-59.505738],["patriciooo93","PATRICIO DIAZ","COLOMBRES 733","ESTUDIANTE","M","26-35",0,-33.69285,-59.509743],["yanina5785","YANINA RODRÍGUEZ","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.694642,-59.507279],["elcarpincho2025","ELCARPINCHO2025","","","U","unknown",1,0,0],["ces_zerpa","MARIA CECILIA ZERPA","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.695241,-59.504976],["liliana_cataldo_","LILIANA CATALDO","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.696248,-59.511615],["stellabraico","STELLA BRAICO","COLOMBRES 733","ESTUDIANTE","F","26-35",0,-33.698754,-59.508822],["clarijeanmaire","CLARI JEANMAIRE","COLOMBRES 728 0 0","EMPLEADO","U","46-60",0,-33.697501,-59.504552],["ianrobles275","IAN ROBLES","ARAOZ 1480","SIN OCUPACION","M","26-35",0,-33.69368,-59.505338],["raulybaicochea","RAULY BAICOCHEA","SIMON 1585 S/N","EMPLEADO","U","46-60",0,-33.689726,-59.510848],["valenperez372","VALUU","MAIPU 3149","","U","18-25",0,-33.692226,-59.505961],["yanetgerstner","YANE","","","U","unknown",1,0,0],["ai.martinezzz","AIENN","","","U","unknown",1,0,0],["miriam.fernandez.10420","MIRIAM FERNANDEZ","","","F","unknown",1,0,0],["mari.agerez123","MARILU GEREZ","","","U","unknown",1,0,0],["holospilates_stretching","YESICA DOBLER","F.ROSELL 678","EMPLEADO","F","36-45",0,0,0],["kiosco_store25","KIOSCO_STORE25","","","U","unknown",1,0,0]];
+// cols: [handle, name, addr, prof, gender, age, biz, lat, lng]
+
+let tableData = [...DATA];
+let tablePage = 0;
+const PAGE_SIZE = 50;
+let mapInstance = null;
+let mapFilter = 'todas';
+
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  const err=document.getElementById('loginErr');
+  if(u==='admin' && p==='baradero2026'){
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('appWrapper').classList.add('visible');
+    renderOverview();
+  } else {
+    err.classList.add('show');
+    document.getElementById('loginPass').value='';
+    document.getElementById('loginPass').focus();
+  }
+}
+
+function showScreen(id,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-mapa').style.display='none';
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const titles={
+    overview:'Overview — Dashboard General',
+    usuarios:'Base de Seguidores — Baradero',
+    mapa:'Mapa Territorial — Baradero',
+    'demografía':'Análisis Demográfico',
+    informe:'Informe Estratégico — IA'
+  };
+  document.getElementById('pageTitle').textContent = titles[id]||id;
+  if(btn) btn.classList.add('active');
+  if(id==='mapa'){
+    document.getElementById('screen-mapa').style.display='flex';
+    setTimeout(initMap,100);
+  } else {
+    const sc=document.getElementById('screen-'+id);
+    if(sc) sc.classList.add('active');
+    if(id==='usuarios'){tablePage=0;renderTable();}
+    if(id==='demografía') renderDemografia();
+  }
+}
+
+function bar(label,val,max,color,showVal){
+  const pct=Math.round(val/max*100);
+  return `<div class="bar-r"><div class="bar-lbl">${label}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}">${showVal?val:''}</div></div><div class="bar-n">${val}</div></div>`;
+}
+
+function renderOverview(){
+  const persons = DATA.filter(r=>!r[6]);
+  const gc={F:0,M:0,U:0};
+  persons.forEach(r=>{gc[r[4]]=(gc[r[4]]||0)+1});
+  const total=persons.length;
+  document.getElementById('genBar').innerHTML=
+    bar('Mujeres',gc.F,total,'linear-gradient(90deg,#ec4899,#a855f7)',true)+
+    bar('Hombres',gc.M,total,'linear-gradient(90deg,#4f7cff,#7c5cfc)',true)+
+    bar('Indefinido',gc.U,total,'linear-gradient(90deg,#4a5070,#2a2f4a)',true);
+
+  const aps={};
+  persons.forEach(r=>{
+    const p=r[1].split(' ');
+    const ap=p[p.length-1];
+    if(ap && ap.length>3) aps[ap]=(aps[ap]||0)+1;
+  });
+  const topAps=Object.entries(aps).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxA=topAps[0]?topAps[0][1]:1;
+  document.getElementById('apellidosBar').innerHTML=topAps.map(([a,v])=>bar(a,v,maxA,'linear-gradient(90deg,#00d4aa,#22d07a)',true)).join('');
+
+  const profs={};
+  persons.forEach(r=>{if(r[3]&&r[3]!='SIN OCUPACION'&&r[3]!='NO CONSTA') profs[r[3]]=(profs[r[3]]||0)+1});
+  const topP=Object.entries(profs).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxP=topP[0]?topP[0][1]:1;
+  document.getElementById('profBar').innerHTML=topP.map(([p,v])=>bar(p,v,maxP,'linear-gradient(90deg,#f59e0b,#f97316)',true)).join('');
+
+  const ages={};
+  const ageOrder=['18-25','26-35','36-45','46-60','60+'];
+  persons.forEach(r=>{if(r[5]&&r[5]!=='unknown') ages[r[5]]=(ages[r[5]]||0)+1});
+  const maxAge=Math.max(...Object.values(ages));
+  const colors=['#22d07a','#4f7cff','#7c5cfc','#f59e0b','#ef4444'];
+  document.getElementById('ageOverview').innerHTML=ageOrder.map((a,i)=>bar(a,ages[a]||0,maxAge,colors[i],true)).join('');
+}
+
+function renderDemografia(){
+  const persons=DATA.filter(r=>!r[6]);
+  const ageOrder=['18-25','26-35','36-45','46-60','60+'];
+  const genAge={};
+  ageOrder.forEach(a=>{genAge[a]={F:0,M:0,U:0}});
+  persons.forEach(r=>{if(r[5]&&r[5]!=='unknown'&&genAge[r[5]]) genAge[r[5]][r[4]]++;});
+
+  let gaHtml='';
+  ageOrder.forEach(a=>{
+    const d=genAge[a]; const tot=d.F+d.M+d.U||1;
+    gaHtml+=`<div style="margin-bottom:10px">
+      <div style="font-size:12px;color:var(--t2);margin-bottom:4px;font-weight:500">${a} años <span style="color:var(--t3)">${d.F+d.M+d.U} total</span></div>
+      <div style="display:flex;height:16px;border-radius:4px;overflow:hidden;gap:1px">
+        <div style="flex:${d.F};background:linear-gradient(90deg,#ec4899,#a855f7);min-width:${d.F?'2px':'0'}" title="Mujeres: ${d.F}"></div>
+        <div style="flex:${d.M};background:linear-gradient(90deg,#4f7cff,#7c5cfc);min-width:${d.M?'2px':'0'}" title="Hombres: ${d.M}"></div>
+        <div style="flex:${d.U};background:var(--s4);min-width:${d.U?'2px':'0'}" title="Indefinido: ${d.U}"></div>
+      </div>
+      <div style="display:flex;gap:12px;font-size:10px;color:var(--t3);margin-top:3px">
+        <span style="color:#ec4899">♀ ${d.F}</span><span style="color:#4f7cff">♂ ${d.M}</span><span>? ${d.U}</span>
+      </div>
+    </div>`;
+  });
+  document.getElementById('genAgeBar').innerHTML=gaHtml+
+    `<div style="font-size:11px;color:var(--t3);margin-top:8px;padding:8px;background:rgba(79,124,255,0.05);border-radius:8px">Leyenda: <span style="color:#ec4899">■ Mujeres</span> &nbsp; <span style="color:#4f7cff">■ Hombres</span> &nbsp; <span style="color:var(--t3)">■ Indefinido</span></div>`;
+
+  const ages={};
+  persons.forEach(r=>{if(r[5]&&r[5]!=='unknown') ages[r[5]]=(ages[r[5]]||0)+1;});
+  const maxA=Math.max(...Object.values(ages));
+  const colors=['#22d07a','#4f7cff','#7c5cfc','#f59e0b','#ef4444'];
+  document.getElementById('ageBar').innerHTML=
+    ageOrder.map((a,i)=>bar(a,ages[a]||0,maxA,colors[i],true)).join('')+
+    `<div style="font-size:11px;color:var(--t3);margin-top:8px;padding:8px;background:var(--s2);border-radius:8px">Edad estimada por rango de DNI argentino. Sin DNI: ${persons.filter(r=>r[5]==='unknown').length} usuarios</div>`;
+}
+
+function renderTable(){
+  const q=(document.getElementById('globalSearch')||{value:''}).value.toLowerCase();
+  const fg=document.getElementById('filterGender')?.value||'';
+  const fa=document.getElementById('filterAge')?.value||'';
+  const fb=document.getElementById('filterBiz')?.value||'';
+
+  tableData=DATA.filter(r=>{
+    if(fg && r[4]!==fg) return false;
+    if(fa && r[5]!==fa) return false;
+    if(fb!=='' && String(r[6])!==fb) return false;
+    if(q && !r[0].toLowerCase().includes(q) && !r[1].toLowerCase().includes(q) && !r[2].toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  const totalPages=Math.ceil(tableData.length/PAGE_SIZE);
+  if(tablePage>=totalPages) tablePage=0;
+  const slice=tableData.slice(tablePage*PAGE_SIZE,(tablePage+1)*PAGE_SIZE);
+
+  const gLabel={F:'Mujer',M:'Hombre',U:'Indefinido'};
+  const gClass={F:'bpk',M:'bb',U:'bgr'};
+  const ageColor={'18-25':'bg','26-35':'bb','36-45':'bp','46-60':'ba','60+':'br'};
+
+  document.getElementById('userCount').textContent=tableData.length+' registros';
+  document.getElementById('userTableBody').innerHTML=slice.map((r,i)=>{
+    const init=(r[1]||'?').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';
+    const gColors={F:'#3d1830',M:'#0d1a3a',U:'#1c2238'};
+    return `<tr>
+      <td style="color:var(--t3)">${tablePage*PAGE_SIZE+i+1}</td>
+      <td><div class="user-cell">
+        <div class="avatar-ph" style="background:${gColors[r[4]]||'var(--s3)'}">${init}</div>
+        <div><div class="user-name">${r[1]||'—'}</div><div class="user-handle">@${r[0]}</div></div>
+      </div></td>
+      <td><span class="badge ${gClass[r[4]]||'bgr'}">${gLabel[r[4]]||'?'}</span></td>
+      <td>${r[5]&&r[5]!=='unknown'?`<span class="badge ${ageColor[r[5]]||'bgr'}">${r[5]}</span>`:'<span style="color:var(--t3)">—</span>'}</td>
+      <td style="color:var(--t2)">${r[3]||'—'}</td>
+      <td style="font-size:11px;color:var(--t3)">${r[2]||'—'}</td>
+      <td><a class="ig-link" href="https://instagram.com/${r[0]}" target="_blank">📷 Ver</a></td>
+    </tr>`;
+  }).join('');
+
+  let pag='<span style="font-size:12px;color:var(--t3);margin-right:8px">Página '+(tablePage+1)+' / '+totalPages+'</span>';
+  if(tablePage>0) pag+=`<button class="pag-btn" onclick="tablePage--;renderTable()">← Ant</button>`;
+  for(let i=Math.max(0,tablePage-2);i<Math.min(totalPages,tablePage+3);i++){
+    pag+=`<button class="pag-btn ${i===tablePage?'active':''}" onclick="tablePage=${i};renderTable()">${i+1}</button>`;
+  }
+  if(tablePage<totalPages-1) pag+=`<button class="pag-btn" onclick="tablePage++;renderTable()">Sig →</button>`;
+  document.getElementById('tablePag').innerHTML=pag;
+}
+
+function globalFilter(q){
+  if(document.getElementById('screen-usuarios')?.classList.contains('active')){
+    tablePage=0; renderTable();
+  }
+}
+
+function toggleMapFilter(el,type){
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  mapFilter=type;
+  renderMapMarkers();
+}
+
+function initMap(){
+  if(mapInstance) return;
+  mapInstance=L.map('mapDiv').setView([-33.697,-59.509],14);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    attribution:'&copy; OpenStreetMap contributors &copy; CartoDB',
+    subdomains:'abcd', maxZoom:19
+  }).addTo(mapInstance);
+  renderMapMarkers();
+}
+
+function renderMapMarkers(){
+  if(!mapInstance) return;
+  mapInstance.eachLayer(l=>{if(l instanceof L.CircleMarker||l instanceof L.Marker) mapInstance.removeLayer(l);});
+
+  const filtered=DATA.filter(r=>{
+    if(!r[7]) return false;
+    if(mapFilter==='todas') return true;
+    if(mapFilter==='F') return r[4]==='F';
+    if(mapFilter==='M') return r[4]==='M';
+    if(mapFilter==='estudiante') return (r[3]||'').toLowerCase()==='estudiante';
+    if(mapFilter==='comercio') return r[6]===1;
+    return true;
+  });
+
+  const gColors={F:'#ec4899',M:'#4f7cff',U:'#4a5070'};
+  filtered.forEach(r=>{
+    const col=r[6]?'#f97316':(gColors[r[4]]||'#4a5070');
+    const marker=L.circleMarker([r[7],r[8]],{
+      radius:6, fillColor:col, color:'rgba(0,0,0,0.3)', weight:1, opacity:1, fillOpacity:0.85
+    }).addTo(mapInstance);
+    marker.bindPopup(`
+      <div style="font-family:'DM Sans',sans-serif;min-width:180px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">${r[1]||r[0]}</div>
+        <div style="font-size:11px;color:#888;margin-bottom:2px">@${r[0]}</div>
+        ${r[2]?`<div style="font-size:11px;margin-bottom:2px">📍 ${r[2]}</div>`:''}
+        ${r[3]?`<div style="font-size:11px;margin-bottom:4px">💼 ${r[3]}</div>`:''}
+        <a href="https://instagram.com/${r[0]}" target="_blank" style="font-size:11px;color:#ec4899">📷 Ver en Instagram</a>
+      </div>`,{maxWidth:220}
+    );
+  });
+
+  const listEl=document.getElementById('mapList');
+  listEl.innerHTML=filtered.slice(0,80).map(r=>`
+    <div class="map-item" onclick="mapInstance.setView([${r[7]},${r[8]}],16)">
+      <div class="map-item-name">${r[1]||r[0]}</div>
+      <div class="map-item-addr">@${r[0]} ${r[2]?'· '+r[2]:''}</div>
+    </div>`).join('');
+  if(filtered.length>80) listEl.innerHTML+=`<div style="padding:12px;font-size:11px;color:var(--t3);text-align:center">+ ${filtered.length-80} más. Usar filtros para ver todos.</div>`;
+}
+
+function exportCSV(){
+  const headers=['Handle','Nombre','Domicilio','Profesion','Genero','Edad','Es_negocio'];
+  const rows=DATA.map(r=>[r[0],r[1],r[2],r[3],r[4],r[5],r[6]?'SI':'NO']);
+  const csv=[headers,...rows].map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='intel_baradero_2026.csv';
+  a.click();
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('loginUser')===document.activeElement)doLogin();});
+</script>
+</body>
+</html>
