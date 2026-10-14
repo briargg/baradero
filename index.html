@@ -640,7 +640,8 @@ function toggleMapFilter(el,type){
 
 function initMap(){
   if(mapInstance) return;
-  mapInstance=L.map('mapDiv').setView([-33.697,-59.509],15);
+  // Centrado exacto en el casco urbano de Baradero, zoom 14
+  mapInstance=L.map('mapDiv').setView([-33.6970,-59.5070],14);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom:19
