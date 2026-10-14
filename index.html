@@ -113,7 +113,8 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 .bar-track{flex:1;background:var(--s3);border-radius:4px;height:20px;overflow:hidden}
 .bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:600;color:#fff;white-space:nowrap;transition:width 0.6s ease}
 .bar-n{font-size:11px;color:var(--t3);width:30px;text-align:right;flex-shrink:0}
-#mapDiv{flex:1;z-index:1}
+#mapDiv{flex:1;z-index:1;background:var(--bg)}
+#mapDiv .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.7)}
 .map-sidebar{width:320px;background:var(--s1);border-left:1px solid var(--brd2);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
 .map-top{padding:14px 16px;border-bottom:1px solid var(--brd2)}
 .map-filters{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
@@ -639,10 +640,10 @@ function toggleMapFilter(el,type){
 
 function initMap(){
   if(mapInstance) return;
-  mapInstance=L.map('mapDiv').setView([-33.697,-59.509],14);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-    attribution:'&copy; OpenStreetMap contributors &copy; CartoDB',
-    subdomains:'abcd', maxZoom:19
+  mapInstance=L.map('mapDiv').setView([-33.697,-59.509],15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom:19
   }).addTo(mapInstance);
   renderMapMarkers();
 }
@@ -680,7 +681,7 @@ function renderMapMarkers(){
 
   const listEl=document.getElementById('mapList');
   listEl.innerHTML=filtered.slice(0,80).map(r=>`
-    <div class="map-item" onclick="mapInstance.setView([${r[7]},${r[8]}],16)">
+    <div class="map-item" onclick="mapInstance.setView([${r[7]},${r[8]}],17)">
       <div class="map-item-name">${r[1]||r[0]}</div>
       <div class="map-item-addr">@${r[0]} ${r[2]?'· '+r[2]:''}</div>
     </div>`).join('');
