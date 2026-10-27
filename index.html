@@ -850,6 +850,90 @@ function escapeHtml(s){
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&document.getElementById('loginUser')===document.activeElement)doLogin();
 });
+
+  // Función para armar el resumen de datos que le pasamos a la IA
+function construirContexto(){
+  const persons = DATA.filter(r => !r[6]);
+  const total = DATA.length;
+  const muj = persons.filter(r => r[4]==='F').length;
+  const hom = persons.filter(r => r[4]==='M').length;
+  const geo = DATA.filter(r => r[7] && r[7] !== 0).length;
+  
+  return `
+    Total de seguidores: ${total}
+    Personas: ${persons.length} | Negocios: ${total - persons.length}
+    Mujeres: ${muj} | Hombres: ${hom}
+    Geolocalizados: ${geo}
+    Núcleo estratégico: Mujeres de 26-45 años, emprendedores.
+  `.trim();
+}
+
+async function enviarChat(){
+  const input = document.getElementById('chatInput');
+  const btn = document.getElementById('chatBtn');
+  const box = document.getElementById('chatBox');
+  const msg = input.value.trim();
+  if(!msg) return;
+
+  box.innerHTML += `<div class="chat-msg user">${msg}</div>`;
+  input.value = '';
+  box.scrollTop = box.scrollHeight;
+  btn.disabled = true;
+
+  const lid = 'ld-' + Date.now();
+  box.innerHTML += `<div class="chat-msg ai" id="${lid}">Escribiendo…</div>`;
+
+  try {
+    const res = await fetch('/api_chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        pregunta: msg, 
+        contexto: construirContexto() 
+      })
+    });
+    const data = await res.json();
+    document.getElementById(lid)?.remove();
+    
+    if(data.error){
+      box.innerHTML += `<div class="chat-msg ai" style="color:red">Error: ${data.error}</div>`;
+    } else {
+      box.innerHTML += `<div class="chat-msg ai">${data.respuesta}</div>`;
+    }
+  } catch(e) {
+    document.getElementById(lid)?.remove();
+    box.innerHTML += `<div class="chat-msg ai" style="color:red">Error de conexión con el servidor</div>`;
+  } finally {
+    btn.disabled = false;
+    box.scrollTop = box.scrollHeight;
+  }
+}
+
+async function generarInformeIA(){
+  const box = document.getElementById('iaReport');
+  const btn = document.getElementById('btnInforme');
+  box.textContent = '⏳ Analizando datos…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api_generar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contexto: construirContexto() })
+    });
+    const data = await res.json();
+    
+    if(data.error){
+      box.textContent = 'Error: ' + data.error;
+    } else {
+      box.textContent = data.report;
+    }
+  } catch(e) {
+    box.textContent = 'Error de conexión con el servidor';
+  } finally {
+    btn.disabled = false;
+  }
+}
 </script>
 </body>
 </html>
